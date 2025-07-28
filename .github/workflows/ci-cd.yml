@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  AWS_REGION: eu-west-1
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
   ECR_REPOSITORY: order-service
   ECS_SERVICE: order-service
   ECS_CLUSTER: order-service-cluster
@@ -149,7 +149,11 @@ jobs:
 
     - name: Health check
       run: |
-        response=$(curl -s -o /dev/null -w "%{http_code}" http://order-service-alb-971782851.eu-west-1.elb.amazonaws.com/health)
+        # Get ALB DNS name from AWS
+        ALB_DNS=$(aws elbv2 describe-load-balancers --names order-service-alb --region ${{ env.AWS_REGION }} --query 'LoadBalancers[0].DNSName' --output text)
+        echo "Testing endpoints at: http://$ALB_DNS"
+        
+        response=$(curl -s -o /dev/null -w "%{http_code}" http://$ALB_DNS/health)
         if [ $response -eq 200 ]; then
           echo "✅ Health check passed"
         else
@@ -159,7 +163,9 @@ jobs:
 
     - name: Test all endpoints
       run: |
-        base_url="http://order-service-alb-971782851.eu-west-1.elb.amazonaws.com"
+        # Get ALB DNS name from AWS
+        ALB_DNS=$(aws elbv2 describe-load-balancers --names order-service-alb --region ${{ env.AWS_REGION }} --query 'LoadBalancers[0].DNSName' --output text)
+        base_url="http://$ALB_DNS"
         
         # Test orders endpoint
         if curl -s -f "$base_url/orders" > /dev/null; then
@@ -185,4 +191,5 @@ jobs:
           exit 1
         fi
         
-        echo "🎉 All endpoints are healthy!" 
+        echo "🎉 All endpoints are healthy!"
+        echo "🌐 Your service is live at: $base_url" 

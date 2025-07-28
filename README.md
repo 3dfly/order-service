@@ -4,7 +4,7 @@ A Spring Boot microservice for managing orders with comprehensive health monitor
 
 ## 🚀 Live API
 
-**Base URL:** `http://order-service-alb-971782851.eu-west-1.elb.amazonaws.com`
+**Base URL:** `http://your-load-balancer-dns-name` (will be provided after deployment)
 
 ## 📋 API Endpoints
 
@@ -95,16 +95,20 @@ The service is deployed on AWS using:
 ### Deployment Commands
 
 ```bash
+# Set your AWS account ID and region
+export AWS_ACCOUNT_ID="YOUR-AWS-ACCOUNT-ID"
+export AWS_REGION="your-preferred-region"  # e.g., us-east-1, eu-west-1
+
 # Build and tag image
 docker build -t order-service .
-docker tag order-service:latest 881043647139.dkr.ecr.eu-west-1.amazonaws.com/order-service:latest
+docker tag order-service:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/order-service:latest
 
 # Push to ECR
-aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin 881043647139.dkr.ecr.eu-west-1.amazonaws.com
-docker push 881043647139.dkr.ecr.eu-west-1.amazonaws.com/order-service:latest
+aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/order-service:latest
 
 # Update ECS service
-aws ecs update-service --cluster order-service-cluster --service order-service --force-new-deployment --region eu-west-1
+aws ecs update-service --cluster order-service-cluster --service order-service --force-new-deployment --region $AWS_REGION
 ```
 
 ## 🧪 Testing
@@ -112,15 +116,18 @@ aws ecs update-service --cluster order-service-cluster --service order-service -
 ### Manual Testing
 
 ```bash
+# Replace YOUR_ALB_DNS with your actual load balancer DNS name
+export ALB_DNS="your-load-balancer-dns-name"
+
 # Health check
-curl http://order-service-alb-971782851.eu-west-1.elb.amazonaws.com/health
+curl http://$ALB_DNS/health
 
 # Orders API
-curl http://order-service-alb-971782851.eu-west-1.elb.amazonaws.com/orders
-curl http://order-service-alb-971782851.eu-west-1.elb.amazonaws.com/orders/calculate
+curl http://$ALB_DNS/orders
+curl http://$ALB_DNS/orders/calculate
 
 # Error handling
-curl http://order-service-alb-971782851.eu-west-1.elb.amazonaws.com/nonexistent
+curl http://$ALB_DNS/nonexistent
 ```
 
 ### Expected Responses
