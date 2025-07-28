@@ -1,0 +1,162 @@
+{
+    "logStreams": [
+        {
+            "logStreamName": "ecs/order-service/567fce34d9d44b29a01a4154b3b5edef",
+            "creationTime": 1753620780639,
+            "firstEventTimestamp": 1753620791443,
+            "lastEventTimestamp": 1753620791443,
+            "lastIngestionTime": 1753620796445,
+            "uploadSequenceToken": "49039859638670300092802447534353171097197363335475230952",
+            "arn": "arn:aws:logs:eu-west-1:881043647139:log-group:/ecs/order-service:log-stream:ecs/order-service/567fce34d9d44b29a01a4154b3b5edef",
+            "storedBytes": 0
+        },
+        {
+            "logStreamName": "ecs/order-service/f8b9350febf34ba181208cec7a5012b8",
+            "creationTime": 1753620719998,
+            "firstEventTimestamp": 1753620729892,
+            "lastEventTimestamp": 1753620729892,
+            "lastIngestionTime": 1753620734888,
+            "uploadSequenceToken": "49039859638670218269514711002286783533102038288522541307",
+            "arn": "arn:aws:logs:eu-west-1:881043647139:log-group:/ecs/order-service:log-stream:ecs/order-service/f8b9350febf34ba181208cec7a5012b8",
+            "storedBytes": 0
+        },
+        {
+            "logStreamName": "ecs/order-service/9bb5bcdffa114557990c34caeb8c6512",
+            "creationTime": 1753620656496,
+            "firstEventTimestamp": 1753620667890,
+            "lastEventTimestamp": 1753620667890,
+            "lastIngestionTime": 1753620672884,
+            "uploadSequenceToken": "49039859638670135852062060354363000294760312728318114000",
+            "arn": "arn:aws:logs:eu-west-1:881043647139:log-group:/ecs/order-service:log-stream:ecs/order-service/9bb5bcdffa114557990c34caeb8c6512",
+            "storedBytes": 0
+        },
+        {
+            "logStreamName": "ecs/order-service/6a58c6a2ce704b1b891f883a3a5e8f60",
+            "creationTime": 1753620601002,
+            "firstEventTimestamp": 1753620611561,
+            "lastEventTimestamp": 1753620611561,
+            "lastIngestionTime": 1753620616555,
+            "uploadSequenceToken": "49039859638670060977978285785836795757709422960428972204",
+            "arn": "arn:aws:logs:eu-west-1:881043647139:log-group:/ecs/order-service:log-stream:ecs/order-service/6a58c6a2ce704b1b891f883a3a5e8f60",
+            "storedBytes": 0
+        },
+        {
+            "logStreamName": "ecs/order-service/c3364b5b2d184ae9bdf4139c27b49add",
+            "creationTime": 1753620526688,
+            "firstEventTimestamp": 1753620536289,
+            "lastEventTimestamp": 1753620536289,
+            "lastIngestionTime": 1753620541321,
+            "uploadSequenceToken": "49039859638669960974839250903476013964386225803467421861",
+            "arn": "arn:aws:logs:eu-west-1:881043647139:log-group:/ecs/order-service:log-stream:ecs/order-service/c3364b5b2d184ae9bdf4139c27b49add",
+            "storedBytes": 0
+        },
+        {
+            "logStreamName": "ecs/order-service/1299b9485a9543d29da2443b3206bb73",
+            "creationTime": 1753620461154,
+            "firstEventTimestamp": 1753620470792,
+            "lastEventTimestamp": 1753620470792,
+            "lastIngestionTime": 1753620475779,
+            "uploadSequenceToken": "49039859638669873854577951168519872361318297941056944272",
+            "arn": "arn:aws:logs:eu-west-1:881043647139:log-group:/ecs/order-service:log-stream:ecs/order-service/1299b9485a9543d29da2443b3206bb73",
+            "storedBytes": 0
+        },
+        {
+            "logStreamName": "ecs/order-service/80022fa2234c44c7b5b6eac585251fbe",
+            "creationTime": 1753620402098,
+            "firstEventTimestamp": 1753620412131,
+            "lastEventTimestamp": 1753620412131,
+            "lastIngestionTime": 1753620417130,
+            "uploadSequenceToken": "49039859638669795896685226378988842690533504866399287540",
+            "arn": "arn:aws:logs:eu-west-1:881043647139:log-group:/ecs/order-service:log-stream:ecs/order-service/80022fa2234c44c7b5b6eac585251fbe",
+            "storedBytes": 0
+        },
+        {
+            "logStreamName": "ecs/order-service/38653dca77bb4e0780c4b91998978ee0",
+            "creationTime": 1753620340962,
+            "firstEventTimestamp": 1753620350677,
+            "lastEventTimestamp": 1753620350677,
+            "lastIngestionTime": 1753620355669,
+            "uploadSequenceToken": "49039859638669714201003377442274378403506676771761420479",
+            "arn": "arn:aws:logs:eu-west-1:881043647139:log-group:/ecs/order-service:log-stream:ecs/order-service/38653dca77bb4e0780c4b91998978ee0",
+            "storedBytes": 0
+        },
+        {
+            "logStreamName": "ecs/order-service/069dbd18b7884f6aacc2b479f83fc276",
+            "creationTime": 1753620282813,
+            "firstEventTimestamp": 1753620292459,
+            "lastEventTimestamp": 1753620292459,
+            "lastIngestionTime": 1753620297449,
+            "uploadSequenceToken": "49039859638669636813349462844472258218687290910757353566",
+            "arn": "arn:aws:logs:eu-west-1:881043647139:log-group:/ecs/order-service:log-stream:ecs/order-service/069dbd18b7884f6aacc2b479f83fc276",
+            "storedBytes": 0
+        },
+        {
+            "logStreamName": "ecs/order-service/c22674ea8a4243c7902f4769a20c0cf4",
+            "creationTime": 1753611826039,
+            "firstEventTimestamp": 1753611838142,
+            "lastEventTimestamp": 1753612973877,
+            "lastIngestionTime": 1753612974413,
+            "uploadSequenceToken": "49039859638659902828884122057278012485479954201678444545",
+            "arn": "arn:aws:logs:eu-west-1:881043647139:log-group:/ecs/order-service:log-stream:ecs/order-service/c22674ea8a4243c7902f4769a20c0cf4",
+            "storedBytes": 0
+        },
+        {
+            "logStreamName": "ecs/order-service/3cabcd4ba3fc4d9786ede9b655b0ba05",
+            "creationTime": 1753611793469,
+            "firstEventTimestamp": 1753611806313,
+            "lastEventTimestamp": 1753611814432,
+            "lastIngestionTime": 1753611817214,
+            "uploadSequenceToken": "49039859638658364647576627748414804323686089693242587198",
+            "arn": "arn:aws:logs:eu-west-1:881043647139:log-group:/ecs/order-service:log-stream:ecs/order-service/3cabcd4ba3fc4d9786ede9b655b0ba05",
+            "storedBytes": 0
+        },
+        {
+            "logStreamName": "ecs/order-service/fe8ec9469a0c4e13a648f4b137f2bba5",
+            "creationTime": 1753611262570,
+            "arn": "arn:aws:logs:eu-west-1:881043647139:log-group:/ecs/order-service:log-stream:ecs/order-service/fe8ec9469a0c4e13a648f4b137f2bba5",
+            "storedBytes": 0
+        },
+        {
+            "logStreamName": "ecs/order-service/9094148b200c48619985f3e34f3852bf",
+            "creationTime": 1753611424359,
+            "arn": "arn:aws:logs:eu-west-1:881043647139:log-group:/ecs/order-service:log-stream:ecs/order-service/9094148b200c48619985f3e34f3852bf",
+            "storedBytes": 0
+        },
+        {
+            "logStreamName": "ecs/order-service/2838938985b34e13991f4f27fa750e71",
+            "creationTime": 1753611481098,
+            "arn": "arn:aws:logs:eu-west-1:881043647139:log-group:/ecs/order-service:log-stream:ecs/order-service/2838938985b34e13991f4f27fa750e71",
+            "storedBytes": 0
+        },
+        {
+            "logStreamName": "ecs/order-service/666e263f1bc8490fa6d2ff9aba914f09",
+            "creationTime": 1753611138895,
+            "arn": "arn:aws:logs:eu-west-1:881043647139:log-group:/ecs/order-service:log-stream:ecs/order-service/666e263f1bc8490fa6d2ff9aba914f09",
+            "storedBytes": 0
+        },
+        {
+            "logStreamName": "ecs/order-service/a4a3c71d6231413b94d677c69f18ad1e",
+            "creationTime": 1753611363856,
+            "arn": "arn:aws:logs:eu-west-1:881043647139:log-group:/ecs/order-service:log-stream:ecs/order-service/a4a3c71d6231413b94d677c69f18ad1e",
+            "storedBytes": 0
+        },
+        {
+            "logStreamName": "ecs/order-service/5244baf6672e443ea98ad0c72a9dd534",
+            "creationTime": 1753611671661,
+            "arn": "arn:aws:logs:eu-west-1:881043647139:log-group:/ecs/order-service:log-stream:ecs/order-service/5244baf6672e443ea98ad0c72a9dd534",
+            "storedBytes": 0
+        },
+        {
+            "logStreamName": "ecs/order-service/c9a974f9a3134df996bd48f7e8e18d7b",
+            "creationTime": 1753611200870,
+            "arn": "arn:aws:logs:eu-west-1:881043647139:log-group:/ecs/order-service:log-stream:ecs/order-service/c9a974f9a3134df996bd48f7e8e18d7b",
+            "storedBytes": 0
+        },
+        {
+            "logStreamName": "ecs/order-service/b9d39fcc6a334100b6b5e624ff5b8cbf",
+            "creationTime": 1753611730744,
+            "arn": "arn:aws:logs:eu-west-1:881043647139:log-group:/ecs/order-service:log-stream:ecs/order-service/b9d39fcc6a334100b6b5e624ff5b8cbf",
+            "storedBytes": 0
+        }
+    ]
+}
