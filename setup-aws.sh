@@ -70,15 +70,15 @@ echo "📤 Pushing image to ECR..."
 docker tag order-service:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/order-service:latest
 docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/order-service:latest
 
-# Create task definition with correct account ID
+# Create task definition with correct account ID and production environment
 echo "📝 Creating ECS task definition..."
 cat > task-definition.json << EOF
 {
   "family": "order-service-task",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
-  "cpu": "256",
-  "memory": "512",
+  "cpu": "512",
+  "memory": "1024",
   "executionRoleArn": "arn:aws:iam::$AWS_ACCOUNT_ID:role/ecsTaskExecutionRole",
   "taskRoleArn": "arn:aws:iam::$AWS_ACCOUNT_ID:role/ecsTaskExecutionRole",
   "containerDefinitions": [
@@ -104,6 +104,26 @@ cat > task-definition.json << EOF
         {
           "name": "SPRING_PROFILES_ACTIVE",
           "value": "production"
+        },
+        {
+          "name": "DB_HOST",
+          "value": "order-service-db.$AWS_REGION.rds.amazonaws.com"
+        },
+        {
+          "name": "DB_PORT",
+          "value": "3306"
+        },
+        {
+          "name": "DB_NAME",
+          "value": "order_service_db"
+        },
+        {
+          "name": "DB_USERNAME",
+          "value": "admin"
+        },
+        {
+          "name": "DB_PASSWORD",
+          "value": "OrderService123!"
         }
       ]
     }
@@ -240,10 +260,29 @@ echo "🌐 Your Order Service will be available at:"
 echo "   http://$ALB_DNS"
 echo ""
 echo "📋 Available API endpoints (wait 2-3 minutes for startup):"
-echo "• GET  http://$ALB_DNS/orders"
-echo "• GET  http://$ALB_DNS/orders/calculate"
-echo "• GET  http://$ALB_DNS/health"
-echo "• GET  http://$ALB_DNS/health/ready"
+echo ""
+echo "🛒 Order Management:"
+echo "• POST   http://$ALB_DNS/orders                    (Create order)"
+echo "• GET    http://$ALB_DNS/orders                    (Get all orders)"
+echo "• GET    http://$ALB_DNS/orders/{id}               (Get order by ID)"
+echo "• PUT    http://$ALB_DNS/orders/{id}               (Update order)"
+echo "• DELETE http://$ALB_DNS/orders/{id}               (Delete order)"
+echo "• PATCH  http://$ALB_DNS/orders/{id}/status?status=ACCEPTED  (Update status)"
+echo "• GET    http://$ALB_DNS/orders/customer/{id}      (Orders by customer)"
+echo "• GET    http://$ALB_DNS/orders/status/PENDING     (Orders by status)"
+echo ""
+echo "🏪 Seller Management:"
+echo "• POST   http://$ALB_DNS/sellers                   (Create seller)"
+echo "• GET    http://$ALB_DNS/sellers                   (Get all sellers)"
+echo "• GET    http://$ALB_DNS/sellers/{id}              (Get seller by ID)"
+echo "• GET    http://$ALB_DNS/sellers/user/{id}         (Get seller by user ID)"
+echo "• GET    http://$ALB_DNS/sellers/verified          (Get verified sellers)"
+echo "• PATCH  http://$ALB_DNS/sellers/{id}/verify       (Verify seller)"
+echo "• DELETE http://$ALB_DNS/sellers/{id}              (Delete seller)"
+echo ""
+echo "🏥 Health & Monitoring:"
+echo "• GET    http://$ALB_DNS/health                    (Health check)"
+echo "• GET    http://$ALB_DNS/health/ready              (Readiness check)"
 echo ""
 echo "⏳ Please wait 2-3 minutes for the service to be fully deployed and healthy..."
 echo ""
