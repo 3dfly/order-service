@@ -28,7 +28,27 @@
       "environment": [
         {
           "name": "SPRING_PROFILES_ACTIVE",
-          "value": "local"
+          "value": "production"
+        },
+        {
+          "name": "PRINTING_PRICE_PER_GRAM",
+          "value": "0.05"
+        },
+        {
+          "name": "PRINTING_PRICE_PER_MINUTE",
+          "value": "0.10"
+        },
+        {
+          "name": "PRINTING_SLICER_PATH",
+          "value": "/usr/local/bin/prusa-slicer"
+        },
+        {
+          "name": "PRINTING_PRINTER_CONFIG",
+          "value": "/app/slicer-configs/bambu_a1.ini"
+        },
+        {
+          "name": "PRINTING_TEMP_DIR",
+          "value": "/tmp/printing-calculations"
         }
       ]
     }

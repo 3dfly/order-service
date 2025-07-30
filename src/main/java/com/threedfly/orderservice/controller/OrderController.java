@@ -3,12 +3,14 @@ package com.threedfly.orderservice.controller;
 import com.threedfly.orderservice.dto.*;
 import com.threedfly.orderservice.entity.OrderStatus;
 import com.threedfly.orderservice.service.OrderService;
+import com.threedfly.orderservice.service.PrintingCalculationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -19,6 +21,7 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
+    private final PrintingCalculationService printingCalculationService;
 
     @PostMapping
     public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody CreateOrderRequest request) {
@@ -124,15 +127,21 @@ public class OrderController {
         }
     }
 
-    @GetMapping("/calculate")
-    public ResponseEntity<String> calculateOrders() {
-        log.info("🧮 GET /orders/calculate endpoint called");
+    @PostMapping("/calculate")
+    public ResponseEntity<PrintingCalculationResponse> calculateOrders(
+            @RequestParam("stlFile") MultipartFile stlFile) {
+        log.info("🧮 POST /orders/calculate endpoint called for file: {}", stlFile.getOriginalFilename());
         try {
-            String response = "Order calculation functionality - implement business logic here";
-            log.info("✅ GET /orders/calculate completed successfully");
+            PrintingCalculationResponse response = printingCalculationService.calculatePrice(stlFile);
+            log.info("✅ POST /orders/calculate completed successfully for file: {}", stlFile.getOriginalFilename());
+            
+            if ("ERROR".equals(response.getStatus())) {
+                return ResponseEntity.badRequest().body(response);
+            }
+            
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("❌ Error in GET /orders/calculate", e);
+            log.error("❌ Error in POST /orders/calculate", e);
             throw e;
         }
     }
