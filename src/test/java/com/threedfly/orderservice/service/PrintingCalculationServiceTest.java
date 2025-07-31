@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestPropertySource(properties = {
     "printing.price.per-gram=0.05",
     "printing.price.per-minute=0.10",
-    "printing.bambu.slicer.path=/usr/bin/echo",
+    "printing.bambu.slicer.path=src/test/resources/test-mock-slicer.py",
     "printing.bambu.printer.config=/tmp/test-config.ini",
     "printing.temp.directory=/tmp/test-printing"
 })
@@ -52,7 +52,7 @@ class PrintingCalculationServiceTest {
             
             bambuSlicerPathField = PrintingCalculationService.class.getDeclaredField("bambuSlicerPath");
             bambuSlicerPathField.setAccessible(true);
-            bambuSlicerPathField.set(printingCalculationService, "/usr/bin/echo");
+            bambuSlicerPathField.set(printingCalculationService, "src/test/resources/test-mock-slicer.py");
             
             printerConfigField = PrintingCalculationService.class.getDeclaredField("printerConfig");
             printerConfigField.setAccessible(true);
@@ -226,13 +226,13 @@ class PrintingCalculationServiceTest {
         BigDecimal expectedTotal = expectedWeightCost.add(expectedTimeCost);
         
         // Weight cost: 50g * $0.05 = $2.50
-        assertEquals(new BigDecimal("2.50"), expectedWeightCost);
+        assertEquals(0, new BigDecimal("2.50").compareTo(expectedWeightCost));
         
         // Time cost: 120min * $0.10 = $12.00
-        assertEquals(new BigDecimal("12.00"), expectedTimeCost);
+        assertEquals(0, new BigDecimal("12.00").compareTo(expectedTimeCost));
         
         // Total: $2.50 + $12.00 = $14.50
-        assertEquals(new BigDecimal("14.50"), expectedTotal);
+        assertEquals(0, new BigDecimal("14.50").compareTo(expectedTotal));
     }
 
     private String createValidStlContent() {
