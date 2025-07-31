@@ -102,9 +102,18 @@ class OrderControllerIntegrationTest {
 
     @Test
     void testCalculateOrders_MissingFile() throws Exception {
-        mockMvc.perform(post("/orders/calculate")
-                .contentType(MediaType.MULTIPART_FORM_DATA))
-                .andExpect(status().isBadRequest());
+        // Test with empty file since endpoint requires multipart with file
+        MockMultipartFile emptyFile = new MockMultipartFile(
+            "stlFile", 
+            "empty.stl", 
+            "application/octet-stream",
+            new byte[0]
+        );
+        
+        mockMvc.perform(multipart("/orders/calculate")
+                .file(emptyFile))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("ERROR"));
     }
 
     @Test
