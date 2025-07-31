@@ -42,6 +42,10 @@ bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
+### 3D Printing Test Files ###
+test-model.stl
+*.gcode
+
 # IntelliJ IDEA
 .idea
 *.iws
