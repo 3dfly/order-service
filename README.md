@@ -1,206 +1,327 @@
 # Order Service
 
-A Spring Boot microservice for managing orders with comprehensive health monitoring and error handling.
+A comprehensive Spring Boot microservice for order management with 3D printing capabilities and payment processing.
 
-## 🚀 Live API
+## 🚀 Features
 
-**Base URL:** `http://your-load-balancer-dns-name` (will be provided after deployment)
+### Core Order Management
+- **CRUD Operations**: Create, read, update, delete orders
+- **Order Status Tracking**: PENDING → PROCESSING → SENT → ACCEPTED
+- **Customer Management**: Track orders by customer ID
+- **Seller Integration**: Associate orders with verified sellers
 
-## 📋 API Endpoints
+### 3D Printing Integration
+- **STL File Processing**: Upload and analyze STL files for 3D printing
+- **Smart Pricing Calculator**: Real-time cost calculation based on:
+  - Material weight (calculated from STL geometry)
+  - Printing time (estimated from complexity)
+  - Configurable pricing rates
+- **Production-Ready Slicer**: Advanced STL analyzer with realistic metrics
 
-### Order Management
-| Method | Endpoint | Description | Response |
-|--------|----------|-------------|----------|
-| `GET` | `/orders` | Retrieve all orders | `"Here are your orders!"` |
-| `GET` | `/orders/calculate` | Calculate order summary | `"Calculating order summary..."` |
+### 💳 Payment Processing & Splitting
+- **PayPal Integration**: Secure payment processing via PayPal API
+- **Automatic Payment Splitting**: 
+  - Platform fee: $3.00 (configurable)
+  - Remaining amount goes to seller
+- **Payment Status Tracking**: PENDING → PROCESSING → COMPLETED/FAILED
+- **Multiple Payment Methods**: PayPal, Stripe, Credit Card support
+- **Webhook Support**: Real-time payment status updates
+
+### Seller Management
+- **Seller Registration**: Complete seller onboarding
+- **Verification System**: Seller verification workflow
+- **Payment Details**: Seller-specific payment configurations
 
 ### Health & Monitoring
-| Method | Endpoint | Description | Response |
-|--------|----------|-------------|----------|
-| `GET` | `/health` | Service health check with database status | JSON with status, timestamp, and database info |
-| `GET` | `/health/ready` | Kubernetes/container readiness probe | JSON with ready status and timestamp |
-
-### Error Handling
-- Custom error controller handles undefined routes
-- Returns JSON error responses with appropriate HTTP status codes
-- Example: `GET /nonexistent` → `{"error":"Not Found","path":"unknown"}` (404)
-
-## 🔧 Technology Stack
-
-- **Framework:** Spring Boot 3.5.4
-- **Java Version:** 21
-- **Build Tool:** Gradle
-- **Container:** Docker (Multi-stage build)
-- **Cloud Platform:** AWS ECS Fargate
-- **Load Balancer:** Application Load Balancer
-- **Container Registry:** Amazon ECR
+- **Health Checks**: Application and database health monitoring
+- **Comprehensive Logging**: Detailed operation tracking
+- **Error Handling**: Global exception handling with proper HTTP status codes
 
 ## 🏗️ Architecture
 
 ```
-Internet → ALB → ECS Fargate → Spring Boot App (Port 8080)
-           ↓
-       Target Group
-    (Health Check: /health)
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend/     │    │   Order Service │    │   PayPal API    │
+│   Client App    │◄──►│   (Spring Boot) │◄──►│                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                │
+                       ┌─────────────────┐
+                       │   Database      │
+                       │   (H2/MySQL)    │
+                       └─────────────────┘
 ```
 
-## 🛠️ Development
+## 📊 API Endpoints
 
-### Prerequisites
-- Java 21
-- Docker
-- AWS CLI (for deployment)
+### Payment API (`/payments`)
 
-### Local Development
+#### Create Payment
+```http
+POST /payments
+Content-Type: application/json
 
-1. **Clone the repository:**
-   ```bash
-   git clone <repository-url>
-   cd order-service
-   ```
+{
+  "orderId": 1,
+  "method": "PAYPAL",
+  "totalAmount": 10.00,
+  "paypalEmail": "buyer@example.com",
+  "currency": "USD",
+  "description": "Order payment",
+  "successUrl": "https://example.com/success",
+  "cancelUrl": "https://example.com/cancel"
+}
+```
 
-2. **Run locally:**
-   ```bash
-   ./gradlew bootRun
-   ```
+**Response:**
+```json
+{
+  "id": 1,
+  "orderId": 1,
+  "sellerId": 1,
+  "sellerBusinessName": "Electronics Store",
+  "totalAmount": 10.00,
+  "platformFee": 3.00,
+  "sellerAmount": 7.00,
+  "status": "PENDING",
+  "method": "PAYPAL",
+  "paypalPaymentId": "PAY-123456789",
+  "paypalApprovalUrl": "https://www.sandbox.paypal.com/checkoutnow?token=EC-123456789",
+  "createdAt": "2025-01-31T10:00:00"
+}
+```
 
-3. **Test endpoints:**
-   ```bash
-   curl http://localhost:8080/health
-   curl http://localhost:8080/orders
-   ```
+#### Execute Payment (After PayPal Approval)
+```http
+POST /payments/{paymentId}/execute
+Content-Type: application/json
 
-### Docker Development
+{
+  "paypalPaymentId": "PAY-123456789",
+  "paypalPayerId": "PAYER123456789"
+}
+```
 
-1. **Build image:**
-   ```bash
-   docker build -t order-service .
-   ```
+#### Get Payment Details
+```http
+GET /payments/{id}
+GET /payments/order/{orderId}
+GET /payments/seller/{sellerId}
+```
 
-2. **Run container:**
-   ```bash
-   docker run -p 8080:8080 order-service
-   ```
+### Order API (`/orders`)
 
-## 🚀 Deployment
+#### Create Order
+```http
+POST /orders
+Content-Type: application/json
 
-### AWS Deployment (Current)
+{
+  "customerId": 1001,
+  "customerName": "John Doe",
+  "customerEmail": "john@example.com",
+  "productId": 2001,
+  "quantity": 2,
+  "totalPrice": 199.99,
+  "shippingAddress": "123 Main St, City",
+  "supplierId": 3001,
+  "sellerId": 1
+}
+```
 
-The service is deployed on AWS using:
-- **ECS Cluster:** `order-service-cluster`
-- **Task Definition:** `order-service-task`
-- **Service:** Fargate with 1 task
-- **Region:** `eu-west-1`
+#### 3D Printing Cost Calculator
+```http
+POST /orders/calculate
+Content-Type: multipart/form-data
 
-### Deployment Commands
+stlFile: [Binary STL file]
+```
 
+**Response:**
+```json
+{
+  "filename": "model.stl",
+  "status": "SUCCESS",
+  "totalPrice": 5.09,
+  "weightGrams": 13.8,
+  "printingTimeMinutes": 44,
+  "pricePerGram": 0.05,
+  "pricePerMinute": 0.10,
+  "weightCost": 0.69,
+  "timeCost": 4.40
+}
+```
+
+### Seller API (`/sellers`)
+
+#### Register Seller
+```http
+POST /sellers
+Content-Type: application/json
+
+{
+  "userId": 1001,
+  "businessName": "Electronics Store",
+  "businessAddress": "123 Business St",
+  "contactEmail": "seller@store.com",
+  "contactPhone": "+15551234567"
+}
+```
+
+## 💰 Payment Flow
+
+### 1. Create Order
 ```bash
-# Set your AWS account ID and region
-export AWS_ACCOUNT_ID="YOUR-AWS-ACCOUNT-ID"
-export AWS_REGION="your-preferred-region"  # e.g., us-east-1, eu-west-1
+# Customer creates an order
+curl -X POST "http://localhost:8080/orders" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId": 1001,
+    "customerName": "John Doe",
+    "customerEmail": "john@example.com",
+    "productId": 2001,
+    "quantity": 1,
+    "totalPrice": 25.00,
+    "shippingAddress": "123 Main St",
+    "supplierId": 3001,
+    "sellerId": 1
+  }'
+```
 
-# Build and tag image
-docker build -t order-service .
-docker tag order-service:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/order-service:latest
+### 2. Initiate Payment
+```bash
+# Create payment with automatic splitting
+curl -X POST "http://localhost:8080/payments" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "orderId": 1,
+    "method": "PAYPAL",
+    "totalAmount": 25.00,
+    "paypalEmail": "buyer@example.com",
+    "currency": "USD",
+    "successUrl": "https://yourapp.com/success",
+    "cancelUrl": "https://yourapp.com/cancel"
+  }'
+```
 
-# Push to ECR
-aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/order-service:latest
+### 3. Payment Splitting
+- **Total Amount**: $25.00
+- **Platform Fee**: $3.00 (goes to your account)
+- **Seller Amount**: $22.00 (goes to seller)
 
-# Update ECS service
-aws ecs update-service --cluster order-service-cluster --service order-service --force-new-deployment --region $AWS_REGION
+### 4. PayPal Redirect
+Customer is redirected to PayPal approval URL for secure payment.
+
+### 5. Execute Payment
+```bash
+# After PayPal approval, execute the payment
+curl -X POST "http://localhost:8080/payments/1/execute" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "paypalPaymentId": "PAY-123456789",
+    "paypalPayerId": "PAYER123456789"
+  }'
+```
+
+## 🔧 Configuration
+
+### Application Properties
+```properties
+# Payment Configuration
+payment.platform.fee=3.00
+payment.platform.currency=USD
+
+# PayPal Configuration (Sandbox)
+paypal.client.id=YOUR_PAYPAL_CLIENT_ID
+paypal.client.secret=YOUR_PAYPAL_CLIENT_SECRET
+paypal.mode=sandbox
+paypal.base.url=https://api.sandbox.paypal.com
+
+# 3D Printing Configuration
+printing.price.per-gram=0.05
+printing.price.per-minute=0.10
+```
+
+### Environment Variables (Production)
+```bash
+# PayPal Configuration
+PAYPAL_CLIENT_ID=your_production_client_id
+PAYPAL_CLIENT_SECRET=your_production_client_secret
+PAYPAL_MODE=live
+PAYPAL_BASE_URL=https://api.paypal.com
+
+# Payment Configuration
+PAYMENT_PLATFORM_FEE=3.00
+PAYMENT_CURRENCY=USD
 ```
 
 ## 🧪 Testing
 
-### Manual Testing
-
+### Run All Tests
 ```bash
-# Replace YOUR_ALB_DNS with your actual load balancer DNS name
-export ALB_DNS="your-load-balancer-dns-name"
-
-# Health check
-curl http://$ALB_DNS/health
-
-# Orders API
-curl http://$ALB_DNS/orders
-curl http://$ALB_DNS/orders/calculate
-
-# Error handling
-curl http://$ALB_DNS/nonexistent
+./gradlew test
 ```
 
-### Expected Responses
-
-**Health Check:**
-```json
-{
-  "status": "UP",
-  "timestamp": "2025-07-28T15:06:24.669277150",
-  "service": "order-service",
-  "database": "NOT_CONFIGURED"
-}
+### Test Payment API
+```bash
+# Test with curl (after starting the application)
+curl -X POST "http://localhost:8080/payments" \
+  -H "Content-Type: application/json" \
+  -d @test-payment.json
 ```
 
-**Readiness Check:**
-```json
-{
-  "ready": true,
-  "timestamp": "2025-07-28T15:06:35.554445981"
-}
+## 🚀 Deployment
+
+### Local Development
+```bash
+./gradlew bootRun
 ```
 
-## 📁 Project Structure
-
-```
-order-service/
-├── src/
-│   ├── main/
-│   │   ├── java/com/threedfly/orderservice/
-│   │   │   ├── controller/
-│   │   │   │   ├── OrderController.java      # Order management endpoints
-│   │   │   │   ├── HealthController.java     # Health monitoring
-│   │   │   │   └── CustomErrorController.java # Error handling
-│   │   │   └── OrderServiceApplication.java  # Main application
-│   │   └── resources/
-│   │       └── application.properties        # Spring configuration
-│   └── test/
-├── Dockerfile                               # Multi-stage Docker build
-├── build.gradle                            # Gradle build configuration
-├── settings.gradle                         # Gradle settings
-└── README.md                              # This file
+### AWS Deployment
+```bash
+# Build and deploy to AWS ECS
+./deploy-printing-update.sh
 ```
 
-## 🔐 Security
+## 📈 Monitoring
 
-- **Container Security:** Non-root user in Docker container
-- **Network Security:** Security groups restrict access
-- **Load Balancer:** Only HTTP (port 80) exposed publicly
-- **ECS Tasks:** Run in private subnets with public IP for ECR access
+### Health Checks
+- **Application Health**: `GET /health`
+- **Readiness Check**: `GET /health/ready`
+- **Database Status**: Included in health response
 
-## 📊 Monitoring
+### Payment Monitoring
+- **Payment Status**: Track via payment ID
+- **Seller Earnings**: Query by seller ID
+- **Platform Revenue**: Monitor platform fees
 
-- **Health Endpoint:** `/health` - Comprehensive service status
-- **Readiness Probe:** `/health/ready` - Container readiness
-- **CloudWatch Logs:** Application logs available in `/ecs/order-service`
-- **ALB Health Checks:** Automatic target health monitoring
+## 🔒 Security
 
-## 🤝 Contributing
+### PayPal Integration
+- **Secure API Calls**: OAuth 2.0 authentication
+- **Webhook Verification**: Signature validation (production)
+- **PCI Compliance**: No card data stored locally
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature-name`
-3. Make your changes
-4. Commit your changes: `git commit -am 'Add some feature'`
-5. Push to the branch: `git push origin feature/your-feature-name`
-6. Submit a pull request
+### Data Protection
+- **Input Validation**: Comprehensive request validation
+- **SQL Injection Protection**: JPA/Hibernate protection
+- **Error Handling**: Secure error responses
 
-## 📄 License
+## 🎯 Key Benefits
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+1. **Automated Payment Splitting**: Seamless revenue sharing between platform and sellers
+2. **Production-Ready**: Comprehensive error handling and monitoring
+3. **Scalable Architecture**: Spring Boot microservice design
+4. **Real-Time Processing**: Immediate payment status updates
+5. **Multi-Payment Support**: Ready for Stripe, Apple Pay, Google Pay integration
+6. **3D Printing Integration**: Unique STL file processing capabilities
 
-## 🆘 Support
+## 📞 Support
 
-For issues and questions:
-- Create an issue in this repository
-- Check the application logs in CloudWatch
-- Verify service health at `/health` endpoint 
+For technical support or questions about the payment integration:
+- Check application logs for detailed error information
+- Monitor PayPal sandbox dashboard for payment status
+- Use health endpoints for system status verification
+
+---
+
+**Ready for Production**: This implementation includes all necessary components for a production-ready payment processing system with automatic revenue splitting between your platform and sellers. 
