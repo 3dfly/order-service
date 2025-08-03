@@ -6,6 +6,8 @@ import com.threedfly.orderservice.dto.CreatePaymentRequest;
 import com.threedfly.orderservice.dto.ExecutePaymentRequest;
 import com.threedfly.orderservice.dto.paypal.PayPalPaymentRequest;
 import com.threedfly.orderservice.dto.paypal.PayPalPaymentResponse;
+import com.threedfly.orderservice.dto.paypal.PayPalPayoutRequest;
+import com.threedfly.orderservice.dto.paypal.PayPalPayoutResponse;
 import com.threedfly.orderservice.entity.Payment;
 import com.threedfly.orderservice.entity.PaymentMethod;
 import com.threedfly.orderservice.entity.PaymentStatus;
@@ -138,6 +140,65 @@ public class PayPalPaymentProvider implements PaymentProvider {
         } catch (Exception e) {
             log.error("❌ Failed to execute PayPal payment", e);
             return PaymentProviderResult.failure("Failed to execute PayPal payment: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public PaymentProviderResult payoutToSupplier(Payment payment, String supplierPayoutAccount) {
+        try {
+            log.info("💸 Initiating PayPal payout to supplier: {} for amount: ${}", 
+                    supplierPayoutAccount, payment.getSellerAmount());
+
+            String accessToken = getAccessToken();
+            
+            // Build PayPal payout request
+            PayPalPayoutRequest payoutRequest = PayPalPayoutRequest.builder()
+                    .senderBatchHeader(PayPalPayoutRequest.PayPalSenderBatchHeader.builder()
+                            .senderBatchId("supplier_payout_" + payment.getId() + "_" + System.currentTimeMillis())
+                            .emailSubject("Payment from 3DFly for Order #" + payment.getOrder().getId())
+                            .emailMessage("You have received a payment for 3D printing services.")
+                            .build())
+                    .items(List.of(PayPalPayoutRequest.PayPalPayoutItem.builder()
+                            .recipientType("EMAIL")
+                            .amount(PayPalPayoutRequest.PayPalPayoutAmount.builder()
+                                    .value(payment.getSellerAmount().toString())
+                                    .currency("USD")
+                                    .build())
+                            .receiver(supplierPayoutAccount)
+                            .note("Payment for Order #" + payment.getOrder().getId() + " - 3D Printing Services")
+                            .senderItemId("supplier_payment_" + payment.getId())
+                            .build()))
+                    .build();
+
+            String response = paypalWebClient.post()
+                    .uri("/v1/payments/payouts")
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(payoutRequest)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+
+            // Parse response using proper DTOs
+            PayPalPayoutResponse payoutResponse = objectMapper.readValue(response, PayPalPayoutResponse.class);
+            String batchStatus = payoutResponse.getBatchHeader().getBatchStatus();
+            String payoutBatchId = payoutResponse.getBatchHeader().getPayoutBatchId();
+            
+            // PayPal payout is typically "PENDING" initially, then becomes "SUCCESS"
+            PaymentStatus status = "SUCCESS".equals(batchStatus) ? PaymentStatus.COMPLETED : PaymentStatus.PENDING;
+            
+            log.info("✅ PayPal payout initiated - Batch ID: {}, Status: {}", payoutBatchId, batchStatus);
+
+            return PaymentProviderResult.builder()
+                    .success(true)
+                    .status(status)
+                    .sellerTransactionId(payoutBatchId) // Store payout batch ID for tracking
+                    .providerResponse(response)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("❌ Failed to initiate PayPal payout to supplier: {}", supplierPayoutAccount, e);
+            return PaymentProviderResult.failure("Failed to payout to supplier: " + e.getMessage());
         }
     }
 

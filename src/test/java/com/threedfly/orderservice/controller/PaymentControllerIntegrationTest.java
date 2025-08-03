@@ -253,7 +253,7 @@ class PaymentControllerIntegrationTest {
     @Test
     void testPaymentSplitCalculation() throws Exception {
         setupMockPaymentFlow(); // Set up mocks for this specific test
-        // Set up different amount for this test
+        // Set up different amounts for this test (printing + shipping = 25.00)
         validPaymentRequest.setTotalAmount(new BigDecimal("25.00"));
 
         PaymentResponse largerResponse = PaymentResponse.builder()
@@ -280,6 +280,7 @@ class PaymentControllerIntegrationTest {
     @Test
     void testPaymentSplitCalculation_MinimumAmount() throws Exception {
         setupMockPaymentFlow(); // Set up mocks for this specific test
+        // Set up amounts that total to 3.01 (printing + shipping = 3.01)
         validPaymentRequest.setTotalAmount(new BigDecimal("3.01"));
 
         PaymentResponse minResponse = PaymentResponse.builder()

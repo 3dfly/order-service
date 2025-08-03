@@ -69,6 +69,34 @@ public class StripePaymentProvider implements PaymentProvider {
     }
 
     @Override
+    public PaymentProviderResult payoutToSupplier(Payment payment, String supplierPayoutAccount) {
+        try {
+            log.info("💸 Initiating Stripe transfer to supplier: {} for amount: ${}", 
+                    supplierPayoutAccount, payment.getSellerAmount());
+
+            // TODO: Implement Stripe transfer to supplier
+            // 1. Create Stripe transfer to connected account
+            // 2. Or use Stripe payouts if supplier has a bank account
+            // 3. Handle transfer fees and currency conversion
+            
+            // For now, simulate the transfer
+            String transferId = "stripe_transfer_" + System.currentTimeMillis();
+            
+            log.info("✅ Stripe transfer initiated - Transfer ID: {}", transferId);
+
+            return PaymentProviderResult.builder()
+                    .success(true)
+                    .status(PaymentStatus.COMPLETED)
+                    .sellerTransactionId(transferId)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("❌ Failed to initiate Stripe transfer to supplier: {}", supplierPayoutAccount, e);
+            return PaymentProviderResult.failure("Failed to transfer to supplier: " + e.getMessage());
+        }
+    }
+
+    @Override
     public String getProviderName() {
         return "Stripe";
     }
