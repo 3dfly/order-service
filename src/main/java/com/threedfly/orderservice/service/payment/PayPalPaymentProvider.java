@@ -21,7 +21,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
-@Service
+@Service("paypal")
 @RequiredArgsConstructor
 @Slf4j
 public class PayPalPaymentProvider implements PaymentProvider {
@@ -103,16 +103,16 @@ public class PayPalPaymentProvider implements PaymentProvider {
     @Override
     public PaymentProviderResult executePayment(Payment payment, ExecutePaymentRequest request) {
         try {
-            log.info("✅ Executing PayPal payment: {}", request.getPaypalPaymentId());
+            log.info("✅ Executing PayPal payment: {}", request.getProviderPaymentId());
 
             String accessToken = getAccessToken();
             
             Map<String, Object> executeRequest = Map.of(
-                "payer_id", request.getPaypalPayerId()
+                "payer_id", request.getProviderPayerId()
             );
 
             String response = paypalWebClient.post()
-                    .uri("/v1/payments/payment/{paymentId}/execute", request.getPaypalPaymentId())
+                    .uri("/v1/payments/payment/{paymentId}/execute", request.getProviderPaymentId())
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(executeRequest)

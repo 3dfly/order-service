@@ -33,10 +33,7 @@ public class PaymentMapper {
     public Payment createPaymentEntity(CreatePaymentRequest request, Order order, Seller seller) {
         log.debug("🏗️ Creating payment entity for order: {} with amount: ${}", order.getId(), request.getTotalAmount());
 
-        // Validate amount is greater than platform fee
-        if (request.getTotalAmount().compareTo(platformFee) <= 0) {
-            throw new RuntimeException("Payment amount must be greater than platform fee of $" + platformFee);
-        }
+        // Remove validation for amount greater than platform fee
 
         // Calculate seller amount
         BigDecimal sellerAmount = request.getTotalAmount().subtract(platformFee);
@@ -63,8 +60,8 @@ public class PaymentMapper {
     public void updatePaymentWithProviderResult(Payment payment, PaymentProviderResult result) {
         if (result.isSuccess()) {
             payment.setStatus(result.getStatus());
-            payment.setPaypalPaymentId(result.getProviderPaymentId());
-            payment.setPaypalResponse(result.getProviderResponse());
+            payment.setProviderPaymentId(result.getProviderPaymentId());
+            payment.setProviderResponse(result.getProviderResponse());
             
             if (result.getPlatformTransactionId() != null) {
                 payment.setPlatformTransactionId(result.getPlatformTransactionId());
@@ -95,8 +92,8 @@ public class PaymentMapper {
                 .sellerAmount(payment.getSellerAmount())
                 .status(payment.getStatus())
                 .method(payment.getMethod())
-                .paypalPaymentId(payment.getPaypalPaymentId())
-                .paypalPayerId(payment.getPaypalPayerId())
+                .providerPaymentId(payment.getProviderPaymentId())
+                .providerPayerId(payment.getProviderPayerId())
                 .platformTransactionId(payment.getPlatformTransactionId())
                 .sellerTransactionId(payment.getSellerTransactionId())
                 .errorMessage(payment.getErrorMessage())

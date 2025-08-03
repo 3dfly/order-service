@@ -1,6 +1,7 @@
 package com.threedfly.orderservice.service.payment;
 
 import com.threedfly.orderservice.entity.PaymentStatus;
+import com.threedfly.orderservice.service.PaymentAuditService;
 import lombok.Builder;
 import lombok.Data;
 
@@ -15,6 +16,12 @@ public class PaymentProviderResult {
     private String sellerTransactionId;
     private String errorMessage;
     private String providerResponse;
+    
+    // Raw request sent to payment provider for debugging
+    private String rawRequest;
+    
+    // Audit data for HTTP request/response logging
+    private PaymentAuditData auditData;
 
     public static PaymentProviderResult success(PaymentStatus status, String providerPaymentId, String approvalUrl) {
         return PaymentProviderResult.builder()
@@ -31,5 +38,15 @@ public class PaymentProviderResult {
                 .status(PaymentStatus.FAILED)
                 .errorMessage(errorMessage)
                 .build();
+    }
+    
+    /**
+     * Wrapper for audit data containing HTTP request/response information
+     */
+    @Data
+    @Builder
+    public static class PaymentAuditData {
+        private PaymentAuditService.HttpRequestData requestData;
+        private PaymentAuditService.HttpResponseData responseData;
     }
 } 

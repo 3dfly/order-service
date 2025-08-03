@@ -10,9 +10,9 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class ExecutePaymentRequest {
     
-    @NotBlank(message = "PayPal payment ID is required")
-    private String paypalPaymentId;
+    @NotBlank(message = "Provider payment ID is required")
+    private String providerPaymentId;
     
-    @NotBlank(message = "PayPal payer ID is required")
-    private String paypalPayerId;
+    @NotBlank(message = "Provider payer ID is required")
+    private String providerPayerId;
 } 

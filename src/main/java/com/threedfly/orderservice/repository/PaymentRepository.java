@@ -20,7 +20,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     
     List<Payment> findByStatus(PaymentStatus status);
     
-    Optional<Payment> findByPaypalPaymentId(String paypalPaymentId);
+    Optional<Payment> findByProviderPaymentId(String providerPaymentId);
     
     @Query("SELECT p FROM Payment p WHERE p.seller.id = :sellerId AND p.status = :status")
     List<Payment> findBySellerIdAndStatus(@Param("sellerId") Long sellerId, @Param("status") PaymentStatus status);

@@ -43,12 +43,12 @@ public class Payment {
     @Column(nullable = false)
     private PaymentMethod method;
     
-    // PayPal specific fields
-    @Column(name = "paypal_payment_id")
-    private String paypalPaymentId;
+    // Provider-agnostic fields (works for PayPal, Stripe, etc.)
+    @Column(name = "provider_payment_id")
+    private String providerPaymentId;
     
-    @Column(name = "paypal_payer_id")
-    private String paypalPayerId;
+    @Column(name = "provider_payer_id") 
+    private String providerPayerId;
     
     @Column(name = "platform_transaction_id")
     private String platformTransactionId;
@@ -66,7 +66,11 @@ public class Payment {
     private String errorMessage;
     
     @Column(length = 2000)
-    private String paypalResponse;
+    private String providerResponse;
+    
+    // Store the raw request sent to the payment provider
+    @Column(name = "raw_request", columnDefinition = "TEXT")
+    private String rawRequest;
     
     @PrePersist
     public void prePersist() {

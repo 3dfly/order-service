@@ -3,40 +3,40 @@ package com.threedfly.orderservice.service.payment;
 import com.threedfly.orderservice.entity.PaymentMethod;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class PaymentProviderFactory {
 
-    private final List<PaymentProvider> paymentProviders;
+    private final ApplicationContext applicationContext;
 
     /**
      * Get the appropriate payment provider for the given payment method
+     * @param method The payment method enum
+     * @return The payment provider instance
+     * @throws RuntimeException if no provider found for the payment method
      */
     public PaymentProvider getProvider(PaymentMethod method) {
-        PaymentProvider provider = paymentProviders.stream()
-                .filter(p -> p.supports(method))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("No payment provider found for method: " + method));
-
-        log.info("🏭 Selected payment provider: {} for method: {}", provider.getProviderName(), method);
-        return provider;
+        return getProvider(method.getProviderName());
     }
 
     /**
-     * Get all supported payment methods
+     * Get the appropriate payment provider for the given provider name
+     * @param providerName The name of the payment provider (e.g., "paypal", "stripe")
+     * @return The payment provider instance
+     * @throws RuntimeException if no provider found with the given name
      */
-    public List<PaymentMethod> getSupportedMethods() {
-        return PaymentMethod.values().length > 0 ? 
-                paymentProviders.stream()
-                        .flatMap(provider -> List.of(PaymentMethod.values()).stream()
-                                .filter(provider::supports))
-                        .distinct()
-                        .toList() : 
-                List.of();
+    public PaymentProvider getProvider(String providerName) {
+        try {
+            PaymentProvider provider = applicationContext.getBean(providerName.toLowerCase(), PaymentProvider.class);
+            log.info("🏭 Selected payment provider: {} for provider name: {}", provider.getProviderName(), providerName);
+            return provider;
+        } catch (Exception e) {
+            log.error("❌ No payment provider found for name: {}", providerName);
+            throw new RuntimeException("No payment provider found for method: " + providerName);
+        }
     }
 } 

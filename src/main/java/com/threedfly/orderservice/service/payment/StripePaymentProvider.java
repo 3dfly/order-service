@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
  * Example Stripe payment provider to demonstrate extensibility
  * This shows how easy it is to add new payment methods with the factory pattern
  */
-@Service
+@Service("stripe")
 @RequiredArgsConstructor
 @Slf4j
 public class StripePaymentProvider implements PaymentProvider {
@@ -48,7 +48,7 @@ public class StripePaymentProvider implements PaymentProvider {
 
     @Override
     public PaymentProviderResult executePayment(Payment payment, ExecutePaymentRequest request) {
-        log.info("✅ Executing Stripe payment: {}", payment.getPaypalPaymentId());
+        log.info("✅ Executing Stripe payment: {}", payment.getProviderPaymentId());
         
         try {
             // TODO: Implement Stripe payment confirmation

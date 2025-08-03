@@ -7,6 +7,7 @@ import com.threedfly.orderservice.entity.Order;
 import com.threedfly.orderservice.entity.Payment;
 import com.threedfly.orderservice.entity.PaymentStatus;
 import com.threedfly.orderservice.entity.Seller;
+import com.threedfly.orderservice.entity.AuditAction;
 import com.threedfly.orderservice.repository.OrderRepository;
 import com.threedfly.orderservice.repository.PaymentRepository;
 import com.threedfly.orderservice.repository.SellerRepository;
@@ -29,6 +30,9 @@ import java.util.List;
  * 3. Implements concurrency protection with locking
  * 4. Proper DTOs instead of Map objects
  * 5. Extensible for multiple payment methods
+ * 6. Audit logging for all HTTP requests/responses
+ * 7. Raw request storage for debugging
+ * 8. Optimized locking with preliminary status checks
  */
 @Service
 @RequiredArgsConstructor
@@ -41,6 +45,7 @@ public class PaymentService {
     private final PaymentProviderFactory paymentProviderFactory;
     private final PaymentMapper paymentMapper;
     private final PaymentLockService paymentLockService;
+    private final PaymentAuditService paymentAuditService;
 
     /**
      * Create a new payment using factory pattern for provider selection
@@ -62,9 +67,6 @@ public class PaymentService {
             // Create payment entity using mapper (cleaner than manual field setting)
             Payment payment = paymentMapper.createPaymentEntity(request, order, seller);
 
-            // Save payment first to get ID
-            payment = paymentRepository.save(payment);
-
             log.info("💰 Payment calculation - Total: ${}, Platform: ${}, Seller: ${}", 
                     payment.getTotalAmount(), payment.getPlatformFee(), payment.getSellerAmount());
 
@@ -74,11 +76,22 @@ public class PaymentService {
             // Process payment with provider (uses proper DTOs, not Map objects)
             PaymentProviderResult result = provider.createPayment(payment, request);
             
+            // Store raw request for debugging (only if available)
+            if (result.getRawRequest() != null) {
+                payment.setRawRequest(result.getRawRequest());
+            }
+            
             // Update payment with provider result using mapper
             paymentMapper.updatePaymentWithProviderResult(payment, result);
 
-            // Save updated payment
+            // Save payment with all updates (single save to avoid optimistic locking)
             payment = paymentRepository.save(payment);
+
+            // Log audit trail
+            if (result.getAuditData() != null) {
+                paymentAuditService.logHttpRequest(payment, AuditAction.CREATE_PAYMENT, 
+                        result.getAuditData().getRequestData(), result.getAuditData().getResponseData());
+            }
 
             if (result.isSuccess()) {
                 log.info("✅ Payment created successfully with ID: {}", payment.getId());
@@ -95,26 +108,42 @@ public class PaymentService {
     }
 
     /**
-     * Execute payment with CONCURRENCY PROTECTION to prevent duplicate execution
+     * Execute payment with OPTIMIZED CONCURRENCY PROTECTION
+     * 
+     * OPTIMIZATION EXPLANATION:
+     * 1. Preliminary status check outside lock - avoids acquiring lock for already processed payments
+     * 2. Definitive status check inside lock - ensures atomic operation
+     * 3. This pattern reduces lock contention while maintaining thread safety
      */
     @Transactional
     public PaymentResponse executePayment(ExecutePaymentRequest request) {
-        log.info("✅ Executing payment: {}", request.getPaypalPaymentId());
+        log.info("✅ Executing payment: {}", request.getProviderPaymentId());
 
         // Find payment by provider payment ID
-        Payment payment = paymentRepository.findByPaypalPaymentId(request.getPaypalPaymentId())
-                .orElseThrow(() -> new RuntimeException("Payment not found with PayPal ID: " + request.getPaypalPaymentId()));
+        Payment payment = paymentRepository.findByProviderPaymentId(request.getProviderPaymentId())
+                .orElseThrow(() -> new RuntimeException("Payment not found with provider ID: " + request.getProviderPaymentId()));
+
+        // 🚀 OPTIMIZATION: Preliminary status check OUTSIDE lock
+        // This avoids acquiring expensive locks for payments that are clearly already processed
+        if (payment.getStatus() != PaymentStatus.PENDING) {
+            log.warn("⚠️ Payment {} is already in status: {} (preliminary check) - skipping execution", 
+                    payment.getId(), payment.getStatus());
+            return paymentMapper.toPaymentResponse(payment);
+        }
 
         // **CRITICAL: Use locking mechanism to prevent concurrent execution**
+        // Even with preliminary check, we still need the lock for atomic operations
         return paymentLockService.executeWithLock(payment.getId(), () -> {
             try {
-                // Reload payment to get latest status (in case it was updated by another thread)
+                // 🔒 DEFINITIVE: Reload payment to get latest status inside lock
+                // This is necessary because another thread might have updated it between
+                // preliminary check and acquiring the lock
                 Payment currentPayment = paymentRepository.findById(payment.getId())
                         .orElseThrow(() -> new RuntimeException("Payment not found"));
 
-                // Check if payment is already processed
+                // Double-check status inside lock (definitive check)
                 if (currentPayment.getStatus() != PaymentStatus.PENDING) {
-                    log.warn("⚠️ Payment {} is already in status: {} - skipping execution", 
+                    log.warn("⚠️ Payment {} is already in status: {} (definitive check) - skipping execution", 
                             currentPayment.getId(), currentPayment.getStatus());
                     return paymentMapper.toPaymentResponse(currentPayment);
                 }
@@ -132,17 +161,23 @@ public class PaymentService {
                 // Update payment with result using mapper
                 paymentMapper.updatePaymentWithProviderResult(currentPayment, result);
                 
-                // Set provider-specific fields (could be moved to mapper)
-                currentPayment.setPaypalPayerId(request.getPaypalPayerId());
+                // Set provider-specific payer ID (generic field)
+                currentPayment.setProviderPayerId(request.getProviderPayerId());
 
                 currentPayment = paymentRepository.save(currentPayment);
+                
+                // Log audit trail
+                if (result.getAuditData() != null) {
+                    paymentAuditService.logHttpRequest(currentPayment, AuditAction.EXECUTE_PAYMENT, 
+                            result.getAuditData().getRequestData(), result.getAuditData().getResponseData());
+                }
                 
                 log.info("✅ Payment {} executed successfully with status: {}", 
                         currentPayment.getId(), currentPayment.getStatus());
                 return paymentMapper.toPaymentResponse(currentPayment);
 
             } catch (Exception e) {
-                log.error("❌ Failed to execute payment: {}", request.getPaypalPaymentId(), e);
+                log.error("❌ Failed to execute payment: {}", request.getProviderPaymentId(), e);
                 
                 // Update payment status to failed
                 Payment failedPayment = paymentRepository.findById(payment.getId()).orElse(payment);
@@ -212,5 +247,6 @@ public class PaymentService {
         log.info("🔔 Received {} webhook", providerName);
         // Implementation would depend on the provider
         // This is where you'd update payment status based on webhook events
+        // TODO: Add audit logging for webhook events
     }
 } 

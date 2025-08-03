@@ -110,17 +110,20 @@ public class PaymentController {
     }
 
     /**
-     * Handle PayPal webhook events
+     * Handle payment provider webhook events
      */
-    @PostMapping("/webhook/paypal")
-    public ResponseEntity<String> handlePayPalWebhook(@RequestBody String payload) {
-        log.info("🔔 PayPal webhook received");
+    @PostMapping("/webhook/{providerName}")
+    public ResponseEntity<String> handlePaymentWebhook(
+            @PathVariable String providerName, 
+            @RequestBody String payload) {
+        log.info("🔔 {} webhook received", providerName);
         try {
-            paymentService.handlePaymentWebhook(payload, "PayPal");
-            return ResponseEntity.ok("Webhook received");
+            paymentService.handlePaymentWebhook(payload, providerName);
+            return ResponseEntity.ok("Webhook processed successfully");
         } catch (Exception e) {
-            log.error("❌ Error processing PayPal webhook", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Webhook processing failed");
+            log.error("❌ Error processing {} webhook", providerName, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error processing webhook");
         }
     }
 } 

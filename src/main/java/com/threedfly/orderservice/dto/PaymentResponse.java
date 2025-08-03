@@ -24,8 +24,8 @@ public class PaymentResponse {
     private BigDecimal sellerAmount;
     private PaymentStatus status;
     private PaymentMethod method;
-    private String paypalPaymentId;
-    private String paypalPayerId;
+    private String providerPaymentId;
+    private String providerPayerId;
     private String platformTransactionId;
     private String sellerTransactionId;
     private String errorMessage;
