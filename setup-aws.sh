@@ -119,11 +119,11 @@ cat > task-definition.json << EOF
         },
         {
           "name": "DB_USERNAME",
-          "value": "admin"
+          "value": "$DB_USERNAME"
         },
         {
           "name": "DB_PASSWORD",
-          "value": "OrderService123!"
+          "value": "$DB_PASSWORD"
         }
       ]
     }
