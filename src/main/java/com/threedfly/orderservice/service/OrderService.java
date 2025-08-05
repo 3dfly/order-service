@@ -1,5 +1,6 @@
 package com.threedfly.orderservice.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.threedfly.orderservice.dto.*;
 import com.threedfly.orderservice.entity.Order;
 import com.threedfly.orderservice.entity.OrderStatus;
@@ -23,6 +24,7 @@ public class OrderService {
     
     private final OrderRepository orderRepository;
     private final SellerRepository sellerRepository;
+    private final ObjectMapper objectMapper;
 
     public OrderResponse createOrder(CreateOrderRequest request) {
         log.info("Creating new order for customer: {}", request.getCustomerId());
@@ -37,13 +39,18 @@ public class OrderService {
         order.setSupplierId(request.getSupplierId());
         order.setCustomerId(request.getCustomerId());
         order.setQuantity(request.getQuantity());
-        order.setTotalPrice(request.getTotalPrice());
+        order.setStlFileUrl(request.getStlFileUrl());
         order.setOrderDate(LocalDateTime.now());
-        order.setCustomerName(request.getCustomerName());
-        order.setCustomerEmail(request.getCustomerEmail());
-        order.setShippingAddress(request.getShippingAddress());
         order.setStatus(OrderStatus.PENDING);
         order.setSeller(seller);
+        
+        // Convert ShippingAddress to JSON string
+        try {
+            String shippingAddressJson = objectMapper.writeValueAsString(request.getShippingAddress());
+            order.setShippingAddress(shippingAddressJson);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize shipping address", e);
+        }
         
         Order savedOrder = orderRepository.save(order);
         log.info("Order created successfully with ID: {}", savedOrder.getId());
@@ -93,17 +100,16 @@ public class OrderService {
         if (request.getQuantity() != null) {
             order.setQuantity(request.getQuantity());
         }
-        if (request.getTotalPrice() != null) {
-            order.setTotalPrice(request.getTotalPrice());
-        }
-        if (request.getCustomerName() != null) {
-            order.setCustomerName(request.getCustomerName());
-        }
-        if (request.getCustomerEmail() != null) {
-            order.setCustomerEmail(request.getCustomerEmail());
+        if (request.getStlFileUrl() != null) {
+            order.setStlFileUrl(request.getStlFileUrl());
         }
         if (request.getShippingAddress() != null) {
-            order.setShippingAddress(request.getShippingAddress());
+            try {
+                String shippingAddressJson = objectMapper.writeValueAsString(request.getShippingAddress());
+                order.setShippingAddress(shippingAddressJson);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to serialize shipping address", e);
+            }
         }
         if (request.getStatus() != null) {
             order.setStatus(request.getStatus());
@@ -147,12 +153,19 @@ public class OrderService {
         response.setCustomerId(order.getCustomerId());
         response.setSellerId(order.getSeller().getId());
         response.setQuantity(order.getQuantity());
-        response.setTotalPrice(order.getTotalPrice());
+        response.setStlFileUrl(order.getStlFileUrl());
         response.setOrderDate(order.getOrderDate());
-        response.setCustomerName(order.getCustomerName());
-        response.setCustomerEmail(order.getCustomerEmail());
-        response.setShippingAddress(order.getShippingAddress());
         response.setStatus(order.getStatus());
+        
+        // Convert JSON string back to ShippingAddress
+        try {
+            ShippingAddress shippingAddress = objectMapper.readValue(order.getShippingAddress(), ShippingAddress.class);
+            response.setShippingAddress(shippingAddress);
+        } catch (Exception e) {
+            log.error("Failed to deserialize shipping address for order {}", order.getId(), e);
+            // Set a default or empty shipping address to avoid null
+            response.setShippingAddress(new ShippingAddress());
+        }
         
         // Convert seller to response
         if (order.getSeller() != null) {
@@ -171,4 +184,4 @@ public class OrderService {
         
         return response;
     }
-} 
+}

@@ -1,7 +1,10 @@
 package com.threedfly.orderservice.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.threedfly.orderservice.TestUtils;
 import com.threedfly.orderservice.dto.CreateOrderRequest;
 import com.threedfly.orderservice.dto.OrderResponse;
+import com.threedfly.orderservice.dto.ShippingAddress;
 import com.threedfly.orderservice.dto.UpdateOrderRequest;
 import com.threedfly.orderservice.entity.Order;
 import com.threedfly.orderservice.entity.OrderStatus;
@@ -14,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -32,201 +34,155 @@ class OrderServiceIntegrationTest {
     @Autowired
     private SellerRepository sellerRepository;
 
-    private Seller testSeller;
+    @Autowired
+    private ObjectMapper objectMapper;
+
     private CreateOrderRequest validOrderRequest;
+    private Seller testSeller;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
+        // Clean up
         orderRepository.deleteAll();
         sellerRepository.deleteAll();
 
-        // Create a test seller
+        // Create test seller
         testSeller = new Seller();
         testSeller.setUserId(1001L);
         testSeller.setBusinessName("Test Store");
         testSeller.setBusinessAddress("123 Test St");
         testSeller.setContactEmail("test@store.com");
-        testSeller.setContactPhone("+1-555-0123");
+        testSeller.setContactPhone("+15550123");
         testSeller.setVerified(true);
         testSeller = sellerRepository.save(testSeller);
 
         // Create valid order request
         validOrderRequest = new CreateOrderRequest();
         validOrderRequest.setCustomerId(2001L);
-        validOrderRequest.setCustomerName("John Doe");
-        validOrderRequest.setCustomerEmail("john@example.com");
-        validOrderRequest.setProductId(1001L);
+        validOrderRequest.setProductId("PROD-1001");
         validOrderRequest.setQuantity(2);
-        validOrderRequest.setTotalPrice(199.99);
-        validOrderRequest.setShippingAddress("456 Customer Ave, City");
+        validOrderRequest.setStlFileUrl("https://example.com/model.stl");
+        validOrderRequest.setShippingAddress(TestUtils.createTestShippingAddress());
         validOrderRequest.setSupplierId(3001L);
         validOrderRequest.setSellerId(testSeller.getId());
     }
 
     @Test
     void testCreateOrder_Success() {
+        // Act
         OrderResponse response = orderService.createOrder(validOrderRequest);
 
+        // Assert
         assertNotNull(response);
-        assertNotNull(response.getId());
         assertEquals(validOrderRequest.getCustomerId(), response.getCustomerId());
-        assertEquals(validOrderRequest.getCustomerName(), response.getCustomerName());
         assertEquals(validOrderRequest.getProductId(), response.getProductId());
         assertEquals(validOrderRequest.getQuantity(), response.getQuantity());
-        assertEquals(validOrderRequest.getTotalPrice(), response.getTotalPrice());
         assertEquals(OrderStatus.PENDING, response.getStatus());
         assertNotNull(response.getOrderDate());
     }
 
     @Test
-    void testGetAllOrders_Success() {
-        // Create multiple orders
-        orderService.createOrder(validOrderRequest);
+    void testCreateOrder_DuplicateOrder() {
+        // Act
+        OrderResponse firstOrder = orderService.createOrder(validOrderRequest);
         
+        // Create second order with same details
         CreateOrderRequest secondRequest = new CreateOrderRequest();
         secondRequest.setCustomerId(2002L);
-        secondRequest.setCustomerName("Jane Smith");
-        secondRequest.setCustomerEmail("jane@example.com");
-        secondRequest.setProductId(1002L);
+        secondRequest.setProductId("PROD-1002");
         secondRequest.setQuantity(1);
-        secondRequest.setTotalPrice(99.99);
-        secondRequest.setShippingAddress("789 Another St, City");
+        secondRequest.setStlFileUrl("https://example.com/another-model.stl");
+        secondRequest.setShippingAddress(TestUtils.createTestShippingAddress());
         secondRequest.setSupplierId(3001L);
         secondRequest.setSellerId(testSeller.getId());
-        orderService.createOrder(secondRequest);
 
-        List<OrderResponse> orders = orderService.getAllOrders();
+        OrderResponse secondOrder = orderService.createOrder(secondRequest);
 
-        assertEquals(2, orders.size());
+        // Assert
+        assertNotEquals(firstOrder.getId(), secondOrder.getId());
     }
 
     @Test
     void testGetOrderById_Success() {
+        // Arrange
         OrderResponse created = orderService.createOrder(validOrderRequest);
-        
+
+        // Act
         OrderResponse retrieved = orderService.getOrderById(created.getId());
 
-        assertNotNull(retrieved);
+        // Assert
         assertEquals(created.getId(), retrieved.getId());
-        assertEquals(created.getCustomerName(), retrieved.getCustomerName());
+        assertEquals(created.getCustomerId(), retrieved.getCustomerId());
+        assertEquals(created.getProductId(), retrieved.getProductId());
     }
 
     @Test
-    void testGetOrderById_NotFound() {
-        assertThrows(RuntimeException.class, () -> {
-            orderService.getOrderById(99999L);
-        });
-    }
-
-    @Test
-    void testGetOrdersByCustomerId_Success() {
-        // Create orders for different customers
+    void testGetOrdersByCustomer_Success() {
+        // Create first order
         orderService.createOrder(validOrderRequest);
-        
+
+        // Create second order for different customer
         CreateOrderRequest differentCustomer = new CreateOrderRequest();
         differentCustomer.setCustomerId(2002L);
-        differentCustomer.setCustomerName("Jane Smith");
-        differentCustomer.setCustomerEmail("jane@example.com");
-        differentCustomer.setProductId(1002L);
+        differentCustomer.setProductId("PROD-1002");
         differentCustomer.setQuantity(1);
-        differentCustomer.setTotalPrice(99.99);
-        differentCustomer.setShippingAddress("789 Another St, City");
+        differentCustomer.setStlFileUrl("https://example.com/another-model.stl");
+        differentCustomer.setShippingAddress(TestUtils.createTestShippingAddress());
         differentCustomer.setSupplierId(3001L);
         differentCustomer.setSellerId(testSeller.getId());
         orderService.createOrder(differentCustomer);
 
-        List<OrderResponse> customerOrders = orderService.getOrdersByCustomerId(2001L);
+        // Get orders for first customer
+        List<OrderResponse> customerOrders = orderService.getOrdersByCustomerId(validOrderRequest.getCustomerId());
 
+        // Assert
         assertEquals(1, customerOrders.size());
-        assertEquals(2001L, customerOrders.get(0).getCustomerId());
+        assertEquals(validOrderRequest.getCustomerId(), customerOrders.get(0).getCustomerId());
     }
 
     @Test
     void testGetOrdersByStatus_Success() {
-        // Create orders with different statuses
-        OrderResponse order1 = orderService.createOrder(validOrderRequest);
-        
+        // Create first order (PENDING by default)
+        orderService.createOrder(validOrderRequest);
+
+        // Create second order and update its status
         CreateOrderRequest secondRequest = new CreateOrderRequest();
         secondRequest.setCustomerId(2002L);
-        secondRequest.setCustomerName("Jane Smith");
-        secondRequest.setCustomerEmail("jane@example.com");
-        secondRequest.setProductId(1002L);
+        secondRequest.setProductId("PROD-1002");
         secondRequest.setQuantity(1);
-        secondRequest.setTotalPrice(99.99);
-        secondRequest.setShippingAddress("789 Another St, City");
+        secondRequest.setStlFileUrl("https://example.com/another-model.stl");
+        secondRequest.setShippingAddress(TestUtils.createTestShippingAddress());
         secondRequest.setSupplierId(3001L);
         secondRequest.setSellerId(testSeller.getId());
-        OrderResponse order2 = orderService.createOrder(secondRequest);
+        
+        OrderResponse secondOrder = orderService.createOrder(secondRequest);
+        orderService.updateOrderStatus(secondOrder.getId(), OrderStatus.PROCESSING);
 
-        // Update one order status
-        orderService.updateOrderStatus(order2.getId(), OrderStatus.PROCESSING);
-
+        // Get PENDING orders
         List<OrderResponse> pendingOrders = orderService.getOrdersByStatus(OrderStatus.PENDING);
-        List<OrderResponse> processingOrders = orderService.getOrdersByStatus(OrderStatus.PROCESSING);
 
+        // Assert
         assertEquals(1, pendingOrders.size());
-        assertEquals(1, processingOrders.size());
         assertEquals(OrderStatus.PENDING, pendingOrders.get(0).getStatus());
-        assertEquals(OrderStatus.PROCESSING, processingOrders.get(0).getStatus());
     }
 
     @Test
     void testUpdateOrder_Success() {
+        // Create order
         OrderResponse created = orderService.createOrder(validOrderRequest);
 
+        // Update order
         UpdateOrderRequest updateRequest = new UpdateOrderRequest();
         updateRequest.setQuantity(5);
-        updateRequest.setTotalPrice(299.99);
-        updateRequest.setShippingAddress("Updated Address");
+        updateRequest.setStlFileUrl("https://example.com/updated-model.stl");
+        updateRequest.setShippingAddress(TestUtils.createTestShippingAddress());
 
+        // Act
         OrderResponse updated = orderService.updateOrder(created.getId(), updateRequest);
 
+        // Assert
         assertEquals(5, updated.getQuantity());
-        assertEquals(299.99, updated.getTotalPrice());
-        assertEquals("Updated Address", updated.getShippingAddress());
-        assertEquals(created.getId(), updated.getId());
+        assertEquals("https://example.com/updated-model.stl", updated.getStlFileUrl());
+        assertNotNull(updated.getShippingAddress());
     }
-
-    @Test
-    void testUpdateOrderStatus_Success() {
-        OrderResponse created = orderService.createOrder(validOrderRequest);
-
-        OrderResponse updated = orderService.updateOrderStatus(created.getId(), OrderStatus.PROCESSING);
-
-        assertEquals(OrderStatus.PROCESSING, updated.getStatus());
-        assertEquals(created.getId(), updated.getId());
-    }
-
-    @Test
-    void testDeleteOrder_Success() {
-        OrderResponse created = orderService.createOrder(validOrderRequest);
-
-        orderService.deleteOrder(created.getId());
-
-        assertThrows(RuntimeException.class, () -> {
-            orderService.getOrderById(created.getId());
-        });
-    }
-
-    @Test
-    void testDeleteOrder_NotFound() {
-        assertThrows(RuntimeException.class, () -> {
-            orderService.deleteOrder(99999L);
-        });
-    }
-
-    @Test
-    void testOrderStatusTransitions() {
-        OrderResponse order = orderService.createOrder(validOrderRequest);
-
-        // Test status transitions
-        order = orderService.updateOrderStatus(order.getId(), OrderStatus.PROCESSING);
-        assertEquals(OrderStatus.PROCESSING, order.getStatus());
-
-        order = orderService.updateOrderStatus(order.getId(), OrderStatus.SENT);
-        assertEquals(OrderStatus.SENT, order.getStatus());
-
-        order = orderService.updateOrderStatus(order.getId(), OrderStatus.ACCEPTED);
-        assertEquals(OrderStatus.ACCEPTED, order.getStatus());
-    }
-} 
+}

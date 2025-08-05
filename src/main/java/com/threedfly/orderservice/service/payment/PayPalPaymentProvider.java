@@ -71,7 +71,7 @@ public class PayPalPaymentProvider implements PaymentProvider {
 
             // Make API call
             String response = paypalWebClient.post()
-                    .uri("/v1/payments/payment")
+                    .uri("/v1/payments/payouts")
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(paypalRequest)
