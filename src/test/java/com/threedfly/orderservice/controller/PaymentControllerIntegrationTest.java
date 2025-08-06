@@ -48,7 +48,7 @@ import com.jayway.jsonpath.JsonPath;
     "paypal.client.id=test_client_id",
     "paypal.client.secret=test_client_secret",
     "paypal.mode=sandbox",
-    "paypal.base.url=https://api.sandbox.paypal.com"
+    "paypal.base.url=https://sandbox.paypal.com"
 })
 @Import(TestConfig.class)
 class PaymentControllerIntegrationTest {

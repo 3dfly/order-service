@@ -53,8 +53,15 @@ public class CreatePaymentRequest {
         this.providerData.put(key, value);
     }
 
-    // Convenience method for PayPal email
+    // Convenience methods for PayPal email
     public void setPaypalEmail(String email) {
         addProviderData("email", email);
+    }
+
+    public String getPaypalEmail() {
+        if (providerData != null && providerData.containsKey("email")) {
+            return (String) providerData.get("email");
+        }
+        return null;
     }
 }

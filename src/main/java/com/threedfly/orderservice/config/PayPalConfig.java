@@ -19,7 +19,7 @@ public class PayPalConfig {
     @Value("${paypal.mode:sandbox}")
     private String mode;
 
-    @Value("${paypal.base.url:https://api.sandbox.paypal.com}")
+    @Value("${paypal.base.url:https://sandbox.paypal.com}")
     private String baseUrl;
 
     @Bean

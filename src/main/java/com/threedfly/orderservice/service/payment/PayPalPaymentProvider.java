@@ -50,23 +50,26 @@ public class PayPalPaymentProvider implements PaymentProvider {
             // Get access token
             String accessToken = getAccessToken();
             
-            // Build PayPal payment request using proper DTOs
-            PayPalPaymentRequest paypalRequest = PayPalPaymentRequest.builder()
-                    .intent("sale")
-                    .payer(PayPalPaymentRequest.PayPalPayer.builder()
-                            .paymentMethod("paypal")
+            // Build PayPal payout request using proper DTOs according to Payouts API
+            // Reference: https://developer.paypal.com/docs/payouts/standard/integrate-api
+            PayPalPayoutRequest payoutRequest = PayPalPayoutRequest.builder()
+                    .senderBatchHeader(PayPalPayoutRequest.PayPalSenderBatchHeader.builder()
+                            .senderBatchId("seller_payment_" + payment.getId() + "_" + System.currentTimeMillis())
+                            .recipientType("EMAIL")
+                            .emailSubject("Payment from 3DFly")
+                            .emailMessage("You have received a payment from 3DFly for your 3D printing order.")
                             .build())
-                    .transactions(List.of(PayPalPaymentRequest.PayPalTransaction.builder()
-                            .amount(PayPalPaymentRequest.PayPalAmount.builder()
-                                    .total(payment.getTotalAmount().toString())
+                    .items(List.of(PayPalPayoutRequest.PayPalPayoutItem.builder()
+                            .recipientType("EMAIL")
+                            .amount(PayPalPayoutRequest.PayPalPayoutAmount.builder()
+                                    .value(payment.getTotalAmount().toString())
                                     .currency(request.getCurrency())
                                     .build())
-                            .description(buildDescription(payment, request))
+                            .receiver(request.getPaypalEmail())
+                            .note("Payment for Order #" + payment.getOrder().getId() + " - 3D Printing Services")
+                            .senderItemId("seller_payment_" + payment.getId())
+                            .recipientWallet("PAYPAL")
                             .build()))
-                    .redirectUrls(PayPalPaymentRequest.PayPalRedirectUrls.builder()
-                            .returnUrl(request.getSuccessUrl())
-                            .cancelUrl(request.getCancelUrl())
-                            .build())
                     .build();
 
             // Make API call
@@ -74,25 +77,26 @@ public class PayPalPaymentProvider implements PaymentProvider {
                     .uri("/v1/payments/payouts")
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(paypalRequest)
+                    .bodyValue(payoutRequest)
                     .retrieve()
                     .bodyToMono(String.class)
                     .block();
 
-            // Parse response using proper DTOs
-            PayPalPaymentResponse paypalResponse = objectMapper.readValue(response, PayPalPaymentResponse.class);
+            // Parse response using proper DTOs for Payouts API
+            PayPalPayoutResponse payoutResponse = objectMapper.readValue(response, PayPalPayoutResponse.class);
             
-            String approvalUrl = paypalResponse.getLinks().stream()
-                    .filter(link -> "approval_url".equals(link.getRel()))
-                    .map(PayPalPaymentResponse.PayPalLink::getHref)
-                    .findFirst()
-                    .orElse(null);
+            String batchStatus = payoutResponse.getBatchHeader().getBatchStatus();
+            String payoutBatchId = payoutResponse.getBatchHeader().getPayoutBatchId();
+
+            // PayPal payout is typically "PENDING" initially, then becomes "SUCCESS"
+            PaymentStatus status = "SUCCESS".equals(batchStatus) ? PaymentStatus.COMPLETED : PaymentStatus.PENDING;
+
+            log.info("✅ PayPal payout initiated - Batch ID: {}, Status: {}", payoutBatchId, batchStatus);
 
             return PaymentProviderResult.builder()
                     .success(true)
-                    .status(PaymentStatus.PENDING)
-                    .providerPaymentId(paypalResponse.getId())
-                    .approvalUrl(approvalUrl)
+                    .status(status)
+                    .providerPaymentId(payoutBatchId)
                     .providerResponse(response)
                     .build();
 

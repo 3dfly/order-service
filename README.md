@@ -234,7 +234,7 @@ payment.platform.currency=USD
 paypal.client.id=YOUR_PAYPAL_CLIENT_ID
 paypal.client.secret=YOUR_PAYPAL_CLIENT_SECRET
 paypal.mode=sandbox
-paypal.base.url=https://api.sandbox.paypal.com
+paypal.base.url=https://sandbox.paypal.com
 
 # 3D Printing Configuration
 printing.price.per-gram=0.05

@@ -16,6 +16,7 @@ public class PayPalPayoutRequest {
     @Builder
     public static class PayPalSenderBatchHeader {
         private String senderBatchId;
+        private String recipientType;  // "EMAIL" or "PHONE"
         private String emailSubject;
         private String emailMessage;
     }
@@ -28,6 +29,7 @@ public class PayPalPayoutRequest {
         private String receiver;
         private String note;
         private String senderItemId;
+        private String recipientWallet; // "PAYPAL" or "VENMO"
     }
     
     @Data
