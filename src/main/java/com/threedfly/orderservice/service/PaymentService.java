@@ -64,11 +64,15 @@ public class PaymentService {
                 throw new RuntimeException("Order must have an associated seller for payment processing");
             }
 
-            // Create payment entity using mapper (cleaner than manual field setting)
+            // Create payment entity using mapper (calculates supplier amount from total - platform fee)
             Payment payment = paymentMapper.createPaymentEntity(request, order, seller);
 
-            log.info("💰 Payment calculation - Total: ${}, Platform: ${}, Seller: ${}", 
+            // Log the payment calculation: Total from seller, Platform fee to 3dfly, Rest to supplier
+            log.info("💰 Payment flow - Total from seller: ${}, Platform Fee (3dfly): ${}, Supplier Amount: ${}", 
                     payment.getTotalAmount(), payment.getPlatformFee(), payment.getSellerAmount());
+
+            // TODO: Implement logic to pay the supplier after receiving the amount from the seller
+            // This may involve creating a new payment to the supplier or updating the existing payment logic
 
             // Get appropriate payment provider using factory pattern
             PaymentProvider provider = paymentProviderFactory.getProvider(request.getMethod());
@@ -94,12 +98,14 @@ public class PaymentService {
             }
 
             if (result.isSuccess()) {
+                log.info("✅ Funds received from seller. Initiating payment to supplier.");
+                initiateSupplierPayment(payment);
                 log.info("✅ Payment created successfully with ID: {}", payment.getId());
+                return paymentMapper.toPaymentResponse(payment);
             } else {
                 log.error("❌ Payment creation failed: {}", result.getErrorMessage());
+                throw new RuntimeException("Payment creation failed: " + result.getErrorMessage());
             }
-
-            return paymentMapper.toPaymentResponse(payment);
 
         } catch (Exception e) {
             log.error("❌ Failed to create payment for order: {}", request.getOrderId(), e);
@@ -248,5 +254,59 @@ public class PaymentService {
         // Implementation would depend on the provider
         // This is where you'd update payment status based on webhook events
         // TODO: Add audit logging for webhook events
+    }
+
+    /**
+     * Initiate payment to supplier after receiving funds from seller
+     * Uses the same payment provider to send money to supplier
+     */
+    private void initiateSupplierPayment(Payment originalPayment) {
+        try {
+            log.info("💸 Initiating payment to supplier for payment ID: {}, amount: ${}", 
+                    originalPayment.getId(), originalPayment.getSellerAmount());
+            
+            // Get the order to get supplier information
+            Order order = originalPayment.getOrder();
+            Long supplierId = order.getSupplierId();
+            
+            if (supplierId == null) {
+                log.warn("⚠️ No supplier ID found for order: {}, skipping supplier payment", order.getId());
+                return;
+            }
+            
+            // TODO: In a real implementation, you would:
+            // 1. Look up supplier payout account (email/bank account) from supplier database
+            // 2. Get supplier's preferred payment method
+            // For now, we'll use a placeholder supplier email
+            String supplierPayoutAccount = "supplier" + supplierId + "@example.com";
+            
+            // Use the same payment provider to send money to supplier
+            PaymentProvider provider = paymentProviderFactory.getProvider(originalPayment.getMethod());
+            
+            // Execute supplier payout
+            PaymentProviderResult payoutResult = provider.payoutToSupplier(originalPayment, supplierPayoutAccount);
+            
+            if (payoutResult.isSuccess()) {
+                log.info("✅ Supplier payment initiated successfully - Supplier ID: {}, Amount: ${}", 
+                        supplierId, originalPayment.getSellerAmount());
+                
+                // Update payment with payout transaction ID
+                originalPayment.setSellerTransactionId(payoutResult.getSellerTransactionId());
+                paymentRepository.save(originalPayment);
+                
+                // TODO: Add proper audit logging for supplier payouts when audit data structure is available
+                
+            } else {
+                log.error("❌ Supplier payment failed: {}", payoutResult.getErrorMessage());
+                // TODO: In production, you might want to:
+                // 1. Queue this for retry
+                // 2. Alert administrators
+                // 3. Set a flag that supplier payment failed
+            }
+            
+        } catch (Exception e) {
+            log.error("❌ Failed to initiate supplier payment for payment ID: {}", originalPayment.getId(), e);
+            // In production, you might want to queue this for retry or alert admins
+        }
     }
 } 

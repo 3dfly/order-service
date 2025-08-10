@@ -1,0 +1,385 @@
+{
+	"info": {
+		"_postman_id": "3dfly-order-service",
+		"name": "3DFly Order Service",
+		"description": "API collection for 3DFly Order Service including payment flows",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Orders",
+			"item": [
+				{
+					"name": "Create Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"customerId\": 1001,\n    \"sellerId\": 2001,\n    \"supplierId\": 3001,\n    \"productId\": \"PROD-123\",\n    \"quantity\": 1,\n    \"stlFileUrl\": \"https://example.com/model.stl\",\n    \"shippingAddress\": {\n        \"street\": \"123 Main St\",\n        \"city\": \"New York\",\n        \"state\": \"NY\",\n        \"zipCode\": \"10001\",\n        \"country\": \"USA\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/orders",
+							"host": ["{{base_url}}"],
+							"path": ["orders"]
+						},
+						"description": "Create a new order for 3D printing"
+					}
+				},
+				{
+					"name": "Get All Orders",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/orders",
+							"host": ["{{base_url}}"],
+							"path": ["orders"]
+						}
+					}
+				},
+				{
+					"name": "Get Order by ID",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/orders/{{order_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["orders", "{{order_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Update Order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"quantity\": 2,\n    \"shippingAddress\": {\n        \"street\": \"456 New St\",\n        \"city\": \"Boston\",\n        \"state\": \"MA\",\n        \"zipCode\": \"02101\",\n        \"country\": \"USA\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/orders/{{order_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["orders", "{{order_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Delete Order",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/orders/{{order_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["orders", "{{order_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Update Order Status",
+					"request": {
+						"method": "PATCH",
+						"url": {
+							"raw": "{{base_url}}/orders/{{order_id}}/status?status=ACCEPTED",
+							"host": ["{{base_url}}"],
+							"path": ["orders", "{{order_id}}", "status"],
+							"query": [
+								{
+									"key": "status",
+									"value": "ACCEPTED"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Calculate Printing Cost",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "multipart/form-data"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "stlFile",
+									"type": "file",
+									"src": "/path/to/your/model.stl"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/orders/calculate",
+							"host": ["{{base_url}}"],
+							"path": ["orders", "calculate"]
+						},
+						"description": "Calculate printing cost for an STL file"
+					}
+				}
+			]
+		},
+		{
+			"name": "Payments",
+			"item": [
+				{
+					"name": "Create Payment (PayPal)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"orderId\": \"{{order_id}}\",\n    \"method\": \"PAYPAL\",\n    \"totalAmount\": 25.00,\n    \"currency\": \"USD\",\n    \"description\": \"Payment for 3D printing services\",\n    \"successUrl\": \"https://your-app.com/payment/success\",\n    \"cancelUrl\": \"https://your-app.com/payment/cancel\",\n    \"paypalEmail\": \"seller@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/payments",
+							"host": ["{{base_url}}"],
+							"path": ["payments"]
+						},
+						"description": "Create a payment using PayPal"
+					}
+				},
+				{
+					"name": "Create Payment (Stripe)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"orderId\": \"{{order_id}}\",\n    \"method\": \"STRIPE\",\n    \"totalAmount\": 25.00,\n    \"currency\": \"USD\",\n    \"description\": \"Payment for 3D printing services\",\n    \"successUrl\": \"https://your-app.com/payment/success\",\n    \"cancelUrl\": \"https://your-app.com/payment/cancel\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/payments",
+							"host": ["{{base_url}}"],
+							"path": ["payments"]
+						},
+						"description": "Create a payment using Stripe"
+					}
+				},
+				{
+					"name": "Execute Payment (PayPal)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"providerPaymentId\": \"PAY-XXX\",\n    \"providerPayerId\": \"PAYER-XXX\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/payments/{{payment_id}}/execute",
+							"host": ["{{base_url}}"],
+							"path": ["payments", "{{payment_id}}", "execute"]
+						},
+						"description": "Execute a PayPal payment after buyer approval"
+					}
+				},
+				{
+					"name": "Get Payment by ID",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/payments/{{payment_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["payments", "{{payment_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Get Payments by Order ID",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/payments/order/{{order_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["payments", "order", "{{order_id}}"]
+						}
+					}
+				},
+				{
+					"name": "PayPal Webhook Handler",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Paypal-Transmission-Id",
+								"value": "{{$guid}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"event_type\": \"PAYMENT.CAPTURE.COMPLETED\",\n    \"resource\": {\n        \"id\": \"PAY-XXX\",\n        \"status\": \"COMPLETED\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/payments/webhook/paypal",
+							"host": ["{{base_url}}"],
+							"path": ["payments", "webhook", "paypal"]
+						},
+						"description": "Handle PayPal webhook events"
+					}
+				}
+			]
+		},
+		{
+			"name": "Sellers",
+			"item": [
+				{
+					"name": "Create Seller",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"1001\",\n    \"businessName\": \"3D Print Shop\",\n    \"email\": \"seller@example.com\",\n    \"shopIds\": [\"SHOP-123\"],\n    \"productIds\": [\"PROD-123\", \"PROD-124\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/sellers",
+							"host": ["{{base_url}}"],
+							"path": ["sellers"]
+						}
+					}
+				},
+				{
+					"name": "Get All Sellers",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/sellers",
+							"host": ["{{base_url}}"],
+							"path": ["sellers"]
+						}
+					}
+				},
+				{
+					"name": "Get Seller by ID",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/sellers/{{seller_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["sellers", "{{seller_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Get Seller by User ID",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/sellers/user/{{user_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["sellers", "user", "{{user_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Get Verified Sellers",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/sellers/verified",
+							"host": ["{{base_url}}"],
+							"path": ["sellers", "verified"]
+						}
+					}
+				},
+				{
+					"name": "Verify Seller",
+					"request": {
+						"method": "PATCH",
+						"url": {
+							"raw": "{{base_url}}/sellers/{{seller_id}}/verify",
+							"host": ["{{base_url}}"],
+							"path": ["sellers", "{{seller_id}}", "verify"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Health",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						}
+					}
+				},
+				{
+					"name": "Readiness Check",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/health/ready",
+							"host": ["{{base_url}}"],
+							"path": ["health", "ready"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://order-service-alb-971782851.eu-west-1.elb.amazonaws.com"
+		},
+		{
+			"key": "order_id",
+			"value": "1"
+		},
+		{
+			"key": "payment_id",
+			"value": "1"
+		},
+		{
+			"key": "seller_id",
+			"value": "1"
+		},
+		{
+			"key": "user_id",
+			"value": "1001"
+		}
+	]
+}

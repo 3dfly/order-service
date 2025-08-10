@@ -17,16 +17,17 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    private Long productId; // Reference to Product in product-service
+    private String productId; // Reference to Product in product-service
     private Long supplierId; // Reference to Supplier in product-service
     private Long customerId; // Reference to User in auth-service
     
     private int quantity;
-    private double totalPrice;
+    private String stlFileUrl;
+    
+    @Column(columnDefinition = "TEXT")
+    private String shippingAddress; // JSON string of ShippingAddress
+    
     private LocalDateTime orderDate;
-    private String customerName;
-    private String customerEmail;
-    private String shippingAddress;
     
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
@@ -34,4 +35,4 @@ public class Order {
     @ManyToOne
     @JoinColumn(name = "seller_id")
     private Seller seller;
-} 
+}

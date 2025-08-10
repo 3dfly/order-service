@@ -31,24 +31,24 @@ public class PaymentMapper {
      * Create a new Payment entity with proper validation and calculation
      */
     public Payment createPaymentEntity(CreatePaymentRequest request, Order order, Seller seller) {
-        log.debug("🏗️ Creating payment entity for order: {} with amount: ${}", order.getId(), request.getTotalAmount());
+        log.debug("🏗️ Creating payment entity for order: {} with total amount: ${}", 
+                order.getId(), request.getTotalAmount());
 
-        // Remove validation for amount greater than platform fee
-
-        // Calculate seller amount
-        BigDecimal sellerAmount = request.getTotalAmount().subtract(platformFee);
+        // Calculate supplier amount (total - platform fee)
+        // Platform fee goes to 3dfly, remaining goes to supplier
+        BigDecimal supplierAmount = request.getTotalAmount().subtract(platformFee);
 
         Payment payment = new Payment();
         payment.setOrder(order);
         payment.setSeller(seller);
         payment.setTotalAmount(request.getTotalAmount());
         payment.setPlatformFee(platformFee);
-        payment.setSellerAmount(sellerAmount);
+        payment.setSellerAmount(supplierAmount); // This represents supplier amount
         payment.setStatus(PaymentStatus.PENDING);
         payment.setMethod(request.getMethod());
         payment.setCreatedAt(LocalDateTime.now());
 
-        log.debug("✅ Created payment entity - Total: ${}, Platform: ${}, Seller: ${}", 
+        log.debug("✅ Created payment entity - Total: ${}, Platform Fee (3dfly): ${}, Supplier Amount: ${}", 
                 payment.getTotalAmount(), payment.getPlatformFee(), payment.getSellerAmount());
 
         return payment;

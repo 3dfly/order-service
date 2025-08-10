@@ -12,16 +12,14 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class OrderResponse {
     private Long id;
-    private Long productId;
+    private String productId;
     private Long supplierId;
     private Long customerId;
     private Long sellerId;
     private int quantity;
-    private double totalPrice;
+    private String stlFileUrl;
+    private ShippingAddress shippingAddress;
     private LocalDateTime orderDate;
-    private String customerName;
-    private String customerEmail;
-    private String shippingAddress;
     private OrderStatus status;
     private SellerResponse seller;
-} 
+}

@@ -1,7 +1,9 @@
 package com.threedfly.orderservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.threedfly.orderservice.TestUtils;
 import com.threedfly.orderservice.dto.CreateOrderRequest;
+import com.threedfly.orderservice.dto.ShippingAddress;
 import com.threedfly.orderservice.dto.UpdateOrderRequest;
 import com.threedfly.orderservice.entity.Order;
 import com.threedfly.orderservice.entity.OrderStatus;
@@ -18,6 +20,8 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -52,7 +56,7 @@ class OrderControllerComprehensiveTest {
     private Order testOrder;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         orderRepository.deleteAll();
         sellerRepository.deleteAll();
 
@@ -69,31 +73,31 @@ class OrderControllerComprehensiveTest {
         // Create valid order request
         validOrderRequest = new CreateOrderRequest();
         validOrderRequest.setCustomerId(2001L);
-        validOrderRequest.setCustomerName("John Doe");
-        validOrderRequest.setCustomerEmail("john@example.com");
-        validOrderRequest.setProductId(1001L);
+        validOrderRequest.setProductId("PROD-1001");
         validOrderRequest.setQuantity(2);
-        validOrderRequest.setTotalPrice(199.99);
-        validOrderRequest.setShippingAddress("456 Customer Ave, City");
+        validOrderRequest.setStlFileUrl("https://example.com/model.stl");
+        validOrderRequest.setShippingAddress(TestUtils.createTestShippingAddress());
         validOrderRequest.setSupplierId(3001L);
         validOrderRequest.setSellerId(testSeller.getId());
 
         // Create a test order for read/update/delete operations
         testOrder = new Order();
         testOrder.setCustomerId(2002L);
-        testOrder.setCustomerName("Jane Smith");
-        testOrder.setCustomerEmail("jane@example.com");
-        testOrder.setProductId(1002L);
+        testOrder.setProductId("PROD-1002");
         testOrder.setQuantity(1);
-        testOrder.setTotalPrice(99.99);
-        testOrder.setShippingAddress("789 Another St, City");
+        testOrder.setStlFileUrl("https://example.com/another-model.stl");
+        try {
+            testOrder.setShippingAddress(objectMapper.writeValueAsString(TestUtils.createTestShippingAddress()));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize shipping address", e);
+        }
         testOrder.setSupplierId(3001L);
         testOrder.setSeller(testSeller);
         testOrder.setStatus(OrderStatus.PENDING);
+        testOrder.setOrderDate(LocalDateTime.now());
         testOrder = orderRepository.save(testOrder);
     }
 
-    // Create Order Tests
     @Test
     void testCreateOrder_Success() throws Exception {
         String orderJson = objectMapper.writeValueAsString(validOrderRequest);
@@ -105,11 +109,10 @@ class OrderControllerComprehensiveTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.customerId").value(2001L))
-                .andExpect(jsonPath("$.customerName").value("John Doe"))
-                .andExpect(jsonPath("$.customerEmail").value("john@example.com"))
-                .andExpect(jsonPath("$.productId").value(1001L))
+                .andExpect(jsonPath("$.productId").value("PROD-1001"))
                 .andExpect(jsonPath("$.quantity").value(2))
-                .andExpect(jsonPath("$.totalPrice").value(199.99))
+                .andExpect(jsonPath("$.stlFileUrl").value("https://example.com/model.stl"))
+                .andExpect(jsonPath("$.shippingAddress.street").exists())
                 .andExpect(jsonPath("$.status").value("PENDING"))
                 .andExpect(jsonPath("$.orderDate").exists());
     }
@@ -126,7 +129,6 @@ class OrderControllerComprehensiveTest {
                 .andExpect(status().isBadRequest());
     }
 
-    // Get All Orders Tests
     @Test
     void testGetAllOrders_Success() throws Exception {
         mockMvc.perform(get("/orders"))
@@ -135,17 +137,16 @@ class OrderControllerComprehensiveTest {
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(greaterThanOrEqualTo(1)))
                 .andExpect(jsonPath("$[0].id").exists())
-                .andExpect(jsonPath("$[0].customerName").exists());
+                .andExpect(jsonPath("$[0].productId").exists());
     }
 
-    // Get Order by ID Tests
     @Test
     void testGetOrderById_Success() throws Exception {
         mockMvc.perform(get("/orders/" + testOrder.getId()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(testOrder.getId()))
-                .andExpect(jsonPath("$.customerName").value("Jane Smith"))
+                .andExpect(jsonPath("$.productId").value("PROD-1002"))
                 .andExpect(jsonPath("$.customerId").value(2002L));
     }
 
@@ -155,7 +156,6 @@ class OrderControllerComprehensiveTest {
                 .andExpect(status().isNotFound());
     }
 
-    // Get Orders by Customer Tests
     @Test
     void testGetOrdersByCustomer_Success() throws Exception {
         mockMvc.perform(get("/orders/customer/" + testOrder.getCustomerId()))
@@ -175,7 +175,6 @@ class OrderControllerComprehensiveTest {
                 .andExpect(jsonPath("$.length()").value(0));
     }
 
-    // Get Orders by Status Tests
     @Test
     void testGetOrdersByStatus_Success() throws Exception {
         mockMvc.perform(get("/orders/status/PENDING"))
@@ -192,13 +191,19 @@ class OrderControllerComprehensiveTest {
                 .andExpect(status().isBadRequest());
     }
 
-    // Update Order Tests
     @Test
     void testUpdateOrder_Success() throws Exception {
+        ShippingAddress newAddress = new ShippingAddress();
+        newAddress.setStreet("456 New St");
+        newAddress.setCity("New City");
+        newAddress.setState("New State");
+        newAddress.setZipCode("54321");
+        newAddress.setCountry("New Country");
+
         UpdateOrderRequest updateRequest = new UpdateOrderRequest();
         updateRequest.setQuantity(5);
-        updateRequest.setTotalPrice(299.99);
-        updateRequest.setShippingAddress("Updated Address");
+        updateRequest.setStlFileUrl("https://example.com/updated-model.stl");
+        updateRequest.setShippingAddress(newAddress);
 
         String updateJson = objectMapper.writeValueAsString(updateRequest);
 
@@ -209,8 +214,8 @@ class OrderControllerComprehensiveTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(testOrder.getId()))
                 .andExpect(jsonPath("$.quantity").value(5))
-                .andExpect(jsonPath("$.totalPrice").value(299.99))
-                .andExpect(jsonPath("$.shippingAddress").value("Updated Address"));
+                .andExpect(jsonPath("$.stlFileUrl").value("https://example.com/updated-model.stl"))
+                .andExpect(jsonPath("$.shippingAddress.street").value("456 New St"));
     }
 
     @Test
@@ -225,7 +230,6 @@ class OrderControllerComprehensiveTest {
                 .andExpect(status().isNotFound());
     }
 
-    // Update Order Status Tests
     @Test
     void testUpdateOrderStatus_Success() throws Exception {
         mockMvc.perform(patch("/orders/" + testOrder.getId() + "/status")
@@ -250,7 +254,6 @@ class OrderControllerComprehensiveTest {
                 .andExpect(status().isBadRequest());
     }
 
-    // Delete Order Tests
     @Test
     void testDeleteOrder_Success() throws Exception {
         mockMvc.perform(delete("/orders/" + testOrder.getId()))
@@ -267,7 +270,6 @@ class OrderControllerComprehensiveTest {
                 .andExpect(status().isNotFound());
     }
 
-    // Printing Calculation Tests
     @Test
     void testCalculatePrice_Success() throws Exception {
         // Create a mock STL file
@@ -329,10 +331,8 @@ class OrderControllerComprehensiveTest {
                 .andExpect(status().isBadRequest());
     }
 
-    // HTTP Method Tests
     @Test
     void testInvalidHttpMethods() throws Exception {
-        // Test invalid methods on various endpoints
         mockMvc.perform(post("/orders/" + testOrder.getId()))
                 .andExpect(status().isMethodNotAllowed());
 
@@ -342,12 +342,10 @@ class OrderControllerComprehensiveTest {
         mockMvc.perform(get("/orders/calculate"))
                 .andExpect(result -> {
                     int status = result.getResponse().getStatus();
-                    // Accept either 405 (Method Not Allowed) or 400 (Bad Request)
                     assert status == 405 || status == 400;
                 });
     }
 
-    // Integration Tests - Complex Workflows
     @Test
     void testCompleteOrderWorkflow() throws Exception {
         // 1. Create order
@@ -369,9 +367,18 @@ class OrderControllerComprehensiveTest {
                 .andExpect(jsonPath("$.status").value("PROCESSING"));
 
         // 3. Update order details
+        ShippingAddress newAddress = new ShippingAddress();
+        newAddress.setStreet("456 New St");
+        newAddress.setCity("New City");
+        newAddress.setState("New State");
+        newAddress.setZipCode("54321");
+        newAddress.setCountry("New Country");
+
         UpdateOrderRequest updateRequest = new UpdateOrderRequest();
         updateRequest.setQuantity(3);
-        updateRequest.setTotalPrice(249.99);
+        updateRequest.setStlFileUrl("https://example.com/updated-model.stl");
+        updateRequest.setShippingAddress(newAddress);
+
         String updateJson = objectMapper.writeValueAsString(updateRequest);
 
         mockMvc.perform(put("/orders/" + orderId)
@@ -379,7 +386,8 @@ class OrderControllerComprehensiveTest {
                 .content(updateJson))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.quantity").value(3))
-                .andExpect(jsonPath("$.totalPrice").value(249.99));
+                .andExpect(jsonPath("$.stlFileUrl").value("https://example.com/updated-model.stl"))
+                .andExpect(jsonPath("$.shippingAddress.street").value("456 New St"));
 
         // 4. Complete order
         mockMvc.perform(patch("/orders/" + orderId + "/status")
@@ -391,7 +399,8 @@ class OrderControllerComprehensiveTest {
         mockMvc.perform(get("/orders/" + orderId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.quantity").value(3))
-                .andExpect(jsonPath("$.totalPrice").value(249.99))
+                .andExpect(jsonPath("$.stlFileUrl").value("https://example.com/updated-model.stl"))
+                .andExpect(jsonPath("$.shippingAddress.street").value("456 New St"))
                 .andExpect(jsonPath("$.status").value("ACCEPTED"));
     }
 
@@ -410,4 +419,4 @@ class OrderControllerComprehensiveTest {
             """;
         return stlContent.getBytes();
     }
-} 
+}

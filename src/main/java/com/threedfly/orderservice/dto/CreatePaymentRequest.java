@@ -2,12 +2,11 @@ package com.threedfly.orderservice.dto;
 
 import com.threedfly.orderservice.entity.PaymentMethod;
 import jakarta.validation.constraints.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.HashMap;
 
 @Data
 @NoArgsConstructor
@@ -41,16 +40,28 @@ public class CreatePaymentRequest {
     
     // Provider-specific data (flexible for different payment providers)
     private Map<String, Object> providerData;
-    
-    // Convenience method for PayPal email (backward compatibility)
-    public String getPaypalEmail() {
-        return providerData != null ? (String) providerData.get("email") : null;
+
+    public void setProviderData(Map<String, Object> providerData) {
+        this.providerData = providerData;
     }
-    
-    public void setPaypalEmail(String email) {
-        if (providerData == null) {
-            providerData = new java.util.HashMap<>();
+
+    // Add provider-specific data (e.g., PayPal email)
+    public void addProviderData(String key, Object value) {
+        if (this.providerData == null) {
+            this.providerData = new HashMap<>();
         }
-        providerData.put("email", email);
+        this.providerData.put(key, value);
     }
-} 
+
+    // Convenience methods for PayPal email
+    public void setPaypalEmail(String email) {
+        addProviderData("email", email);
+    }
+
+    public String getPaypalEmail() {
+        if (providerData != null && providerData.containsKey("email")) {
+            return (String) providerData.get("email");
+        }
+        return null;
+    }
+}

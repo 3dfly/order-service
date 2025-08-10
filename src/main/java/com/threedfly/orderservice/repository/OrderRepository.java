@@ -17,7 +17,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByCustomerId(Long customerId);
     
     // Find orders by seller ID
-    List<Order> findBySellerId(Long sellerId);
+    @Query("SELECT o FROM Order o WHERE o.seller.id = :sellerId")
+    List<Order> findBySellerId(@Param("sellerId") Long sellerId);
     
     // Find orders by status
     List<Order> findByStatus(OrderStatus status);
@@ -29,16 +30,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByOrderDateBetween(LocalDateTime startDate, LocalDateTime endDate);
     
     // Find orders by product ID
-    List<Order> findByProductId(Long productId);
+    List<Order> findByProductId(String productId);
     
     // Find orders by supplier ID
     List<Order> findBySupplierId(Long supplierId);
-    
-    // Custom query to get orders with total value greater than specified amount
-    @Query("SELECT o FROM Order o WHERE o.totalPrice > :minPrice")
-    List<Order> findOrdersWithTotalPriceGreaterThan(@Param("minPrice") double minPrice);
-    
-    // Custom query to get order statistics by customer
-    @Query("SELECT COUNT(o), SUM(o.totalPrice) FROM Order o WHERE o.customerId = :customerId")
-    Object[] getOrderStatisticsByCustomer(@Param("customerId") Long customerId);
-} 
+}

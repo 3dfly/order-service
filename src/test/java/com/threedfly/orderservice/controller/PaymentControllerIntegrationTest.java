@@ -1,6 +1,7 @@
 package com.threedfly.orderservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.threedfly.orderservice.TestUtils;
 import com.threedfly.orderservice.config.TestConfig;
 import com.threedfly.orderservice.dto.CreatePaymentRequest;
 import com.threedfly.orderservice.dto.PaymentResponse;
@@ -27,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -36,7 +36,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
-
 import static org.mockito.Mockito.lenient;
 import com.jayway.jsonpath.JsonPath;
 
@@ -49,7 +48,7 @@ import com.jayway.jsonpath.JsonPath;
     "paypal.client.id=test_client_id",
     "paypal.client.secret=test_client_secret",
     "paypal.mode=sandbox",
-    "paypal.base.url=https://api.sandbox.paypal.com"
+    "paypal.base.url=https://sandbox.paypal.com"
 })
 @Import(TestConfig.class)
 class PaymentControllerIntegrationTest {
@@ -86,7 +85,7 @@ class PaymentControllerIntegrationTest {
     private CreatePaymentRequest validPaymentRequest;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         // Clean up
         paymentRepository.deleteAll();
         orderRepository.deleteAll();
@@ -105,12 +104,10 @@ class PaymentControllerIntegrationTest {
         // Create test order
         testOrder = new Order();
         testOrder.setCustomerId(2001L);
-        testOrder.setCustomerName("John Doe");
-        testOrder.setCustomerEmail("john@test.com");
-        testOrder.setProductId(3001L);
+        testOrder.setProductId("PROD-3001");
         testOrder.setQuantity(2);
-        testOrder.setTotalPrice(10.00);
-        testOrder.setShippingAddress("456 Test Ave");
+        testOrder.setStlFileUrl("https://example.com/model.stl");
+        testOrder.setShippingAddress(objectMapper.writeValueAsString(TestUtils.createTestShippingAddress()));
         testOrder.setSupplierId(4001L);
         testOrder.setSeller(testSeller);
         testOrder.setStatus(OrderStatus.PENDING);
@@ -127,8 +124,6 @@ class PaymentControllerIntegrationTest {
         validPaymentRequest.setDescription("Test payment");
         validPaymentRequest.setSuccessUrl("https://test.com/success");
         validPaymentRequest.setCancelUrl("https://test.com/cancel");
-
-        // Don't call setupMockPaymentFlow() here - each test will set up its own mocks as needed
     }
 
     private void setupMockPaymentFlow() {
@@ -142,9 +137,6 @@ class PaymentControllerIntegrationTest {
         testPayment.setStatus(PaymentStatus.PENDING);
         testPayment.setMethod(PaymentMethod.PAYPAL);
         testPayment.setCreatedAt(LocalDateTime.now());
-
-        // Log the test payment setup
-        System.out.println("Setting up mock payment flow with test payment: " + testPayment);
 
         // Mock payment mapper - make sure it always returns a valid payment
         when(mockPaymentMapper.createPaymentEntity(any(), any(), any())).thenAnswer(invocation -> {
@@ -169,14 +161,11 @@ class PaymentControllerIntegrationTest {
             payment.setMethod(request.getMethod());
             payment.setCreatedAt(LocalDateTime.now());
 
-            // Log the created payment entity
-            System.out.println("Created payment entity: " + payment);
-
             return payment;
         });
         
         PaymentResponse testResponse = PaymentResponse.builder()
-                .id(1L) // Set a valid ID for testing
+                .id(1L)
                 .orderId(testOrder.getId())
                 .sellerId(testSeller.getId())
                 .sellerBusinessName("Test Electronics Store")
@@ -194,10 +183,10 @@ class PaymentControllerIntegrationTest {
         PaymentProviderResult successResult = PaymentProviderResult.builder()
                 .success(true)
                 .status(PaymentStatus.PENDING)
-                .providerPaymentId("TEST_PROVIDER_PAYMENT_ID") // Ensure providerPaymentId is set
+                .providerPaymentId("TEST_PROVIDER_PAYMENT_ID")
                 .approvalUrl("https://paypal.com/approval")
                 .rawRequest("{\"test\": \"request\"}")
-                .auditData(null) // No audit data needed for test
+                .auditData(null)
                 .build();
         
         lenient().when(mockPaymentProviderFactory.getProvider(PaymentMethod.PAYPAL)).thenReturn(mockPaymentProvider);
@@ -209,7 +198,6 @@ class PaymentControllerIntegrationTest {
 
     @Test
     void testCreatePayment_Success() throws Exception {
-        // Set up mocks for successful flow
         setupMockPaymentFlow();
         
         String paymentJson = objectMapper.writeValueAsString(validPaymentRequest);
@@ -219,7 +207,6 @@ class PaymentControllerIntegrationTest {
                 .content(paymentJson))
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                // Note: ID assertion removed since it's mocked and not the focus of this test
                 .andExpect(jsonPath("$.orderId").value(testOrder.getId()))
                 .andExpect(jsonPath("$.totalAmount").value(10.00))
                 .andExpect(jsonPath("$.platformFee").value(3.00))
@@ -229,13 +216,13 @@ class PaymentControllerIntegrationTest {
 
     @Test
     void testCreatePayment_InvalidOrderId() throws Exception {
-        validPaymentRequest.setOrderId(99999L); // Non-existent order
+        validPaymentRequest.setOrderId(99999L);
         String paymentJson = objectMapper.writeValueAsString(validPaymentRequest);
 
         mockMvc.perform(post("/payments")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(paymentJson))
-                .andExpect(status().isNotFound()) // 404 is correct for "Order not found"
+                .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value(containsString("Order not found")));
     }
 
@@ -252,8 +239,7 @@ class PaymentControllerIntegrationTest {
 
     @Test
     void testPaymentSplitCalculation() throws Exception {
-        setupMockPaymentFlow(); // Set up mocks for this specific test
-        // Set up different amount for this test
+        setupMockPaymentFlow();
         validPaymentRequest.setTotalAmount(new BigDecimal("25.00"));
 
         PaymentResponse largerResponse = PaymentResponse.builder()
@@ -279,7 +265,7 @@ class PaymentControllerIntegrationTest {
 
     @Test
     void testPaymentSplitCalculation_MinimumAmount() throws Exception {
-        setupMockPaymentFlow(); // Set up mocks for this specific test
+        setupMockPaymentFlow();
         validPaymentRequest.setTotalAmount(new BigDecimal("3.01"));
 
         PaymentResponse minResponse = PaymentResponse.builder()
@@ -324,40 +310,13 @@ class PaymentControllerIntegrationTest {
     @Test
     void testGetPaymentById_NotFound() throws Exception {
         mockMvc.perform(get("/payments/{id}", 99999L))
-                .andExpect(status().isNotFound()) // 404 is correct for "Payment not found"
+                .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value(containsString("Payment not found")));
     }
 
-//    @Test
-//    void testExecutePayment_Success() throws Exception {
-//        // First create a payment to get an ID
-//        String paymentJson = objectMapper.writeValueAsString(validPaymentRequest);
-//
-//        // Create payment first
-//        mockMvc.perform(post("/payments")
-//                .contentType(MediaType.APPLICATION_JSON)
-//                .content(paymentJson))
-//                .andExpect(status().isCreated());
-//
-//        // Now execute the payment (using ID 1 since it's the first created payment)
-//        mockMvc.perform(post("/payments/{paymentId}/execute", 1L)
-//                .contentType(MediaType.APPLICATION_JSON)
-//                .content("{\"providerPaymentId\":\"TEST_PROVIDER_PAYMENT_ID\",\"providerPayerId\":\"TEST_PAYER_ID\"}"))
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.status").value("COMPLETED"));
-//    }
-
-//    @Test
-//    void testPaymentProviderWebhook_EmptyPayload() throws Exception {
-//        mockMvc.perform(post("/payments/webhook/paypal")
-//                .contentType(MediaType.APPLICATION_JSON)
-//                .content(""))
-//                .andExpect(status().isOk());
-//    }
-
     @Test
     void testConcurrentPaymentExecution() throws Exception {
-        setupMockPaymentFlow(); // Set up mocks for this specific test
+        setupMockPaymentFlow();
         // Create a payment first
         MvcResult result = mockMvc.perform(post("/payments")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -386,7 +345,7 @@ class PaymentControllerIntegrationTest {
                 .success(true)
                 .status(PaymentStatus.COMPLETED)
                 .providerPaymentId("TEST_PROVIDER_PAYMENT_ID")
-                .auditData(null) // Ensure auditData is set to avoid NPE
+                .auditData(null)
                 .build();
         lenient().when(mockPaymentProvider.executePayment(any(), any())).thenReturn(executeResult);
 
@@ -396,13 +355,12 @@ class PaymentControllerIntegrationTest {
                 .content("{\"providerPaymentId\":\"TEST_PROVIDER_PAYMENT_ID\",\"providerPayerId\":\"TEST_PAYER_ID\"}"))
                 .andExpect(status().isOk());
 
-        // Verify locking service was called (this demonstrates concurrency protection)
+        // Verify locking service was called
         verify(mockPaymentLockService, atLeastOnce()).executeWithLock(anyLong(), any());
     }
 
     @Test
     void testInvalidHttpMethods() throws Exception {
-        // Test that only allowed HTTP methods work
         mockMvc.perform(get("/payments"))
                 .andExpect(status().isMethodNotAllowed());
 
@@ -414,4 +372,4 @@ class PaymentControllerIntegrationTest {
         mockMvc.perform(delete("/payments/1"))
                 .andExpect(status().isMethodNotAllowed());
     }
-} 
+}
