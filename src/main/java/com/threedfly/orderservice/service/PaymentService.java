@@ -100,15 +100,12 @@ public class PaymentService {
             if (result.isSuccess()) {
                 log.info("✅ Funds received from seller. Initiating payment to supplier.");
                 initiateSupplierPayment(payment);
-            }
-
-            if (result.isSuccess()) {
                 log.info("✅ Payment created successfully with ID: {}", payment.getId());
+                return paymentMapper.toPaymentResponse(payment);
             } else {
                 log.error("❌ Payment creation failed: {}", result.getErrorMessage());
+                throw new RuntimeException("Payment creation failed: " + result.getErrorMessage());
             }
-
-            return paymentMapper.toPaymentResponse(payment);
 
         } catch (Exception e) {
             log.error("❌ Failed to create payment for order: {}", request.getOrderId(), e);
