@@ -1,5 +1,8 @@
 package com.threedfly.orderservice.config;
 
+import com.threedfly.orderservice.exception.FileParseException;
+import com.threedfly.orderservice.exception.InvalidFileTypeException;
+import com.threedfly.orderservice.exception.InvalidParameterCombinationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -40,18 +43,31 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationException(MethodArgumentNotValidException ex) {
         log.error("Validation exception occurred: {}", ex.getMessage());
-        
+
+        // Check if this is a material combination validation error
+        boolean isMaterialCombinationError = ex.getBindingResult().getAllErrors().stream()
+                .anyMatch(error -> error.getCode() != null &&
+                         error.getCode().equals("ValidMaterialCombination"));
+
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("timestamp", LocalDateTime.now());
         errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
-        errorResponse.put("error", "Validation Failed");
-        
-        Map<String, String> fieldErrors = new HashMap<>();
-        for (FieldError error : ex.getBindingResult().getFieldErrors()) {
-            fieldErrors.put(error.getField(), error.getDefaultMessage());
+
+        if (isMaterialCombinationError) {
+            // Return specific error format for material combination errors
+            errorResponse.put("error", "Invalid Parameter Combination");
+            String message = ex.getBindingResult().getAllErrors().get(0).getDefaultMessage();
+            errorResponse.put("message", message);
+        } else {
+            // Return field errors for other validation failures
+            errorResponse.put("error", "Validation Failed");
+            Map<String, String> fieldErrors = new HashMap<>();
+            for (FieldError error : ex.getBindingResult().getFieldErrors()) {
+                fieldErrors.put(error.getField(), error.getDefaultMessage());
+            }
+            errorResponse.put("fieldErrors", fieldErrors);
         }
-        errorResponse.put("fieldErrors", fieldErrors);
-        
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
@@ -97,26 +113,81 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(org.springframework.web.multipart.MultipartException.class)
     public ResponseEntity<Map<String, Object>> handleMultipartException(org.springframework.web.multipart.MultipartException ex) {
         log.error("Multipart exception: {}", ex.getMessage());
-        
+
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("timestamp", LocalDateTime.now());
         errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
         errorResponse.put("error", "Bad Request");
         errorResponse.put("message", "Multipart request required");
-        
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(org.springframework.web.multipart.support.MissingServletRequestPartException.class)
+    public ResponseEntity<Map<String, Object>> handleMissingServletRequestPartException(
+            org.springframework.web.multipart.support.MissingServletRequestPartException ex) {
+        log.error("Missing request part: {}", ex.getMessage());
+
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now());
+        errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
+        errorResponse.put("error", "Bad Request");
+        errorResponse.put("message", "File is required. Please upload a 3D model file (STL, OBJ, or 3MF)");
+        errorResponse.put("missingPart", ex.getRequestPartName());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(InvalidFileTypeException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidFileType(InvalidFileTypeException ex) {
+        log.error("Invalid file type: {}", ex.getMessage());
+
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now());
+        errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
+        errorResponse.put("error", "Invalid File Type");
+        errorResponse.put("message", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(InvalidParameterCombinationException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidParameterCombination(
+            InvalidParameterCombinationException ex) {
+        log.error("Invalid parameter combination: {}", ex.getMessage());
+
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now());
+        errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
+        errorResponse.put("error", "Invalid Parameter Combination");
+        errorResponse.put("message", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(FileParseException.class)
+    public ResponseEntity<Map<String, Object>> handleFileParseException(FileParseException ex) {
+        log.error("File parse error: {}", ex.getMessage(), ex);
+
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now());
+        errorResponse.put("status", HttpStatus.UNPROCESSABLE_ENTITY.value());
+        errorResponse.put("error", "File Parse Error");
+        errorResponse.put("message", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(errorResponse);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
         log.error("Unexpected exception occurred: {}", ex.getMessage(), ex);
-        
+
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("timestamp", LocalDateTime.now());
         errorResponse.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
         errorResponse.put("error", "Internal Server Error");
         errorResponse.put("message", "An unexpected error occurred");
-        
+
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 } 

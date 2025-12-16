@@ -1,0 +1,598 @@
+{
+  "info": {
+    "name": "3D Print Quotation API",
+    "description": "Collection for testing the 3D printing quotation API with various technology, material, and supporter combinations",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Valid Combinations",
+      "item": [
+        {
+          "name": "FDM + PLA + Supporters",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/your/model.stl"
+                },
+                {
+                  "key": "technology",
+                  "value": "FDM",
+                  "type": "text"
+                },
+                {
+                  "key": "material",
+                  "value": "PLA",
+                  "type": "text"
+                },
+                {
+                  "key": "layerHeight",
+                  "value": "0.2",
+                  "type": "text"
+                },
+                {
+                  "key": "shells",
+                  "value": "2",
+                  "type": "text"
+                },
+                {
+                  "key": "infill",
+                  "value": "15",
+                  "type": "text"
+                },
+                {
+                  "key": "supporters",
+                  "value": "true",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/print/quotation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "print", "quotation"]
+            }
+          }
+        },
+        {
+          "name": "FDM + TPU + No Supporters",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/your/model.stl"
+                },
+                {
+                  "key": "technology",
+                  "value": "FDM",
+                  "type": "text"
+                },
+                {
+                  "key": "material",
+                  "value": "TPU",
+                  "type": "text"
+                },
+                {
+                  "key": "layerHeight",
+                  "value": "0.3",
+                  "type": "text"
+                },
+                {
+                  "key": "shells",
+                  "value": "3",
+                  "type": "text"
+                },
+                {
+                  "key": "infill",
+                  "value": "20",
+                  "type": "text"
+                },
+                {
+                  "key": "supporters",
+                  "value": "false",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/print/quotation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "print", "quotation"]
+            }
+          }
+        },
+        {
+          "name": "SLS + PETG + Supporters",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/your/model.stl"
+                },
+                {
+                  "key": "technology",
+                  "value": "SLS",
+                  "type": "text"
+                },
+                {
+                  "key": "material",
+                  "value": "PETG",
+                  "type": "text"
+                },
+                {
+                  "key": "layerHeight",
+                  "value": "0.2",
+                  "type": "text"
+                },
+                {
+                  "key": "shells",
+                  "value": "2",
+                  "type": "text"
+                },
+                {
+                  "key": "infill",
+                  "value": "15",
+                  "type": "text"
+                },
+                {
+                  "key": "supporters",
+                  "value": "true",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/print/quotation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "print", "quotation"]
+            }
+          }
+        },
+        {
+          "name": "SLA + ABS + No Supporters",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/your/model.stl"
+                },
+                {
+                  "key": "technology",
+                  "value": "SLA",
+                  "type": "text"
+                },
+                {
+                  "key": "material",
+                  "value": "ABS",
+                  "type": "text"
+                },
+                {
+                  "key": "layerHeight",
+                  "value": "0.1",
+                  "type": "text"
+                },
+                {
+                  "key": "shells",
+                  "value": "4",
+                  "type": "text"
+                },
+                {
+                  "key": "infill",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "supporters",
+                  "value": "false",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/print/quotation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "print", "quotation"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Invalid Combinations",
+      "item": [
+        {
+          "name": "SLS + TPU (Invalid)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/your/model.stl"
+                },
+                {
+                  "key": "technology",
+                  "value": "SLS",
+                  "type": "text"
+                },
+                {
+                  "key": "material",
+                  "value": "TPU",
+                  "type": "text"
+                },
+                {
+                  "key": "layerHeight",
+                  "value": "0.2",
+                  "type": "text"
+                },
+                {
+                  "key": "shells",
+                  "value": "2",
+                  "type": "text"
+                },
+                {
+                  "key": "infill",
+                  "value": "15",
+                  "type": "text"
+                },
+                {
+                  "key": "supporters",
+                  "value": "true",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/print/quotation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "print", "quotation"]
+            }
+          }
+        },
+        {
+          "name": "SLA + PETG (Invalid)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/your/model.stl"
+                },
+                {
+                  "key": "technology",
+                  "value": "SLA",
+                  "type": "text"
+                },
+                {
+                  "key": "material",
+                  "value": "PETG",
+                  "type": "text"
+                },
+                {
+                  "key": "layerHeight",
+                  "value": "0.2",
+                  "type": "text"
+                },
+                {
+                  "key": "shells",
+                  "value": "2",
+                  "type": "text"
+                },
+                {
+                  "key": "infill",
+                  "value": "15",
+                  "type": "text"
+                },
+                {
+                  "key": "supporters",
+                  "value": "true",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/print/quotation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "print", "quotation"]
+            }
+          }
+        },
+        {
+          "name": "SLA + TPU (Invalid)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/your/model.stl"
+                },
+                {
+                  "key": "technology",
+                  "value": "SLA",
+                  "type": "text"
+                },
+                {
+                  "key": "material",
+                  "value": "TPU",
+                  "type": "text"
+                },
+                {
+                  "key": "layerHeight",
+                  "value": "0.2",
+                  "type": "text"
+                },
+                {
+                  "key": "shells",
+                  "value": "2",
+                  "type": "text"
+                },
+                {
+                  "key": "infill",
+                  "value": "15",
+                  "type": "text"
+                },
+                {
+                  "key": "supporters",
+                  "value": "true",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/print/quotation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "print", "quotation"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Validation Errors",
+      "item": [
+        {
+          "name": "Missing Supporters Parameter",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/your/model.stl"
+                },
+                {
+                  "key": "technology",
+                  "value": "FDM",
+                  "type": "text"
+                },
+                {
+                  "key": "material",
+                  "value": "PLA",
+                  "type": "text"
+                },
+                {
+                  "key": "layerHeight",
+                  "value": "0.2",
+                  "type": "text"
+                },
+                {
+                  "key": "shells",
+                  "value": "2",
+                  "type": "text"
+                },
+                {
+                  "key": "infill",
+                  "value": "15",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/print/quotation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "print", "quotation"]
+            }
+          }
+        },
+        {
+          "name": "Invalid Layer Height (Too Small)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/your/model.stl"
+                },
+                {
+                  "key": "technology",
+                  "value": "FDM",
+                  "type": "text"
+                },
+                {
+                  "key": "material",
+                  "value": "PLA",
+                  "type": "text"
+                },
+                {
+                  "key": "layerHeight",
+                  "value": "0.01",
+                  "type": "text"
+                },
+                {
+                  "key": "shells",
+                  "value": "2",
+                  "type": "text"
+                },
+                {
+                  "key": "infill",
+                  "value": "15",
+                  "type": "text"
+                },
+                {
+                  "key": "supporters",
+                  "value": "true",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/print/quotation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "print", "quotation"]
+            }
+          }
+        },
+        {
+          "name": "Invalid Shells Count (Too Many)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/your/model.stl"
+                },
+                {
+                  "key": "technology",
+                  "value": "FDM",
+                  "type": "text"
+                },
+                {
+                  "key": "material",
+                  "value": "PLA",
+                  "type": "text"
+                },
+                {
+                  "key": "layerHeight",
+                  "value": "0.2",
+                  "type": "text"
+                },
+                {
+                  "key": "shells",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "infill",
+                  "value": "15",
+                  "type": "text"
+                },
+                {
+                  "key": "supporters",
+                  "value": "true",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/print/quotation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "print", "quotation"]
+            }
+          }
+        },
+        {
+          "name": "Invalid Infill (Not in List)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/your/model.stl"
+                },
+                {
+                  "key": "technology",
+                  "value": "FDM",
+                  "type": "text"
+                },
+                {
+                  "key": "material",
+                  "value": "PLA",
+                  "type": "text"
+                },
+                {
+                  "key": "layerHeight",
+                  "value": "0.2",
+                  "type": "text"
+                },
+                {
+                  "key": "shells",
+                  "value": "2",
+                  "type": "text"
+                },
+                {
+                  "key": "infill",
+                  "value": "25",
+                  "type": "text"
+                },
+                {
+                  "key": "supporters",
+                  "value": "true",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/print/quotation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "print", "quotation"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
