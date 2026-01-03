@@ -72,7 +72,7 @@ class PrusaSlicerServiceTest {
         assertTrue(command.contains("--support-material=1"));
         assertTrue(command.contains("--support-material-auto=1"));
         assertTrue(command.contains("--export-gcode"));
-        assertTrue(command.contains("--dont-arrange")); // PrusaSlicer-specific
+        assertTrue(command.contains("--align-xy")); // Align model to bed center
         assertTrue(command.contains(modelPath.toAbsolutePath().normalize().toString()));
     }
 
@@ -126,9 +126,9 @@ class PrusaSlicerServiceTest {
 
         List<String> command = processBuilder.command();
 
-        // Verify PrusaSlicer-specific flag is present
-        assertTrue(command.contains("--dont-arrange"),
-                "PrusaSlicer should include --dont-arrange flag");
+        // Verify model alignment flag is present
+        assertTrue(command.contains("--align-xy"),
+                "PrusaSlicer should include --align-xy flag for model positioning");
     }
 
     @Test

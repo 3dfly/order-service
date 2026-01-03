@@ -36,6 +36,8 @@ import java.util.regex.Pattern;
 public class PrintQuotationService {
 
     private final IniConfigurationMapper iniConfigurationMapper;
+    private final DynamicIniGenerator dynamicIniGenerator;
+    private final ModelOrientationService modelOrientationService;
     private final PrintingPricingConfig pricingConfig;
     private final MaterialCombinationValidator materialValidator;
     private final SlicerServiceFactory slicerServiceFactory;
@@ -56,45 +58,59 @@ public class PrintQuotationService {
         // 2. Validate technology-material combination
         materialValidator.validate(request.getTechnology(), request.getMaterial());
 
-        // 3. Get appropriate INI configuration
-        String iniFile = iniConfigurationMapper.getConfigurationFile(
+        // 3. Get base INI configuration
+        String baseIniFile = iniConfigurationMapper.getConfigurationFile(
                 request.getTechnology(),
                 request.getMaterial(),
                 request.getLayerHeight(),
                 request.getSupporters()
         );
-        Path iniPath = iniConfigurationMapper.getConfigurationPath(iniFile);
+        Path baseIniPath = iniConfigurationMapper.getConfigurationPath(baseIniFile);
 
-        log.info("🔧 Using INI configuration: {}", iniFile);
+        log.info("🔧 Using base INI configuration: {}", baseIniFile);
 
-        // 4. Save file temporarily
+        // 4. Generate dynamic INI with custom parameters
+        Path dynamicIniPath = null;
         Path tempFilePath = null;
+        Path orientedFilePath = null;
         try {
+            dynamicIniPath = dynamicIniGenerator.generateDynamicIni(baseIniPath, request);
+            log.info("📝 Generated dynamic INI with custom parameters");
+
+            // 5. Save file temporarily
             tempFilePath = saveTemporaryFile(file);
 
-            // 5. Process with slicer
+            // 6. Auto-orient model if requested
+            orientedFilePath = modelOrientationService.orientModelIfNeeded(
+                    tempFilePath, request.getAutoOrient());
+            Path modelToSlice = orientedFilePath != null ? orientedFilePath : tempFilePath;
+
+            // 7. Process with slicer using dynamic INI
             SlicingResult slicingResult = processWithSlicer(
-                    tempFilePath,
-                    iniPath,
-                    request.getLayerHeight(),
-                    request.getShells(),
-                    request.getInfill(),
-                    request.getSupporters()
+                    modelToSlice,
+                    dynamicIniPath,
+                    request
             );
 
             if (!slicingResult.isSuccess()) {
                 throw new FileParseException("Slicing failed: " + slicingResult.getErrorMessage());
             }
 
-            // 6. Calculate pricing
+            // 8. Calculate pricing
             return calculatePricing(slicingResult, file.getOriginalFilename(), request);
 
         } catch (IOException e) {
             throw new FileParseException("File processing failed: " + e.getMessage(), e);
         } finally {
-            // Clean up temporary file
+            // Clean up temporary files
             if (tempFilePath != null) {
                 cleanupTemporaryFile(tempFilePath);
+            }
+            if (orientedFilePath != null && !orientedFilePath.equals(tempFilePath)) {
+                modelOrientationService.cleanupOrientedModel(orientedFilePath);
+            }
+            if (dynamicIniPath != null) {
+                dynamicIniGenerator.cleanupDynamicIni(dynamicIniPath);
             }
         }
     }
@@ -139,11 +155,10 @@ public class PrintQuotationService {
     }
 
     private SlicingResult processWithSlicer(Path modelFilePath, Path iniPath,
-                                             Double layerHeight, Integer shells,
-                                             Integer infill, Boolean supporters) {
+                                             PrintQuotationRequest request) {
         log.info("⚙️ Processing file with slicer: {}", modelFilePath);
         log.info("📊 Parameters - layerHeight: {}, shells: {}, infill: {}%, supporters: {}",
-                layerHeight, shells, infill, supporters);
+                request.getLayerHeight(), request.getShells(), request.getInfill(), request.getSupporters());
 
         try {
             // Validate paths to prevent command injection
@@ -151,14 +166,14 @@ public class PrintQuotationService {
             validatePathSafety(iniPath, "configuration file");
 
             // Validate and sanitize numeric parameters to prevent command injection
-            validateNumericParameter(layerHeight, 0.05, 0.4, "layer height");
-            validateNumericParameter(shells.doubleValue(), 1.0, 5.0, "shells");
-            validateNumericParameter(infill.doubleValue(), 5.0, 20.0, "infill");
+            validateNumericParameter(request.getLayerHeight(), 0.05, 0.4, "layer height");
+            validateNumericParameter(request.getShells().doubleValue(), 1.0, 5.0, "shells");
+            validateNumericParameter(request.getInfill().doubleValue(), 5.0, 20.0, "infill");
 
-            // Validate boolean parameter
-            if (supporters == null) {
-                throw new IllegalArgumentException("Supporters parameter cannot be null");
-            }
+//            // Validate boolean parameter
+//            if (supporters == null) {
+//                throw new IllegalArgumentException("Supporters parameter cannot be null");
+//            }
 
             // Prepare output file path
             Path outputDir = modelFilePath.getParent();
@@ -174,10 +189,7 @@ public class PrintQuotationService {
                     modelFilePath,
                     iniPath,
                     outputPath,
-                    layerHeight,
-                    shells,
-                    infill,
-                    supporters
+                    request
             );
 
             log.info("🔧 Executing slicer command: {}", String.join(" ", processBuilder.command()));
@@ -213,6 +225,22 @@ public class PrintQuotationService {
 
             // Parse slicer output
             SlicingResult result = parseSlicerOutput(output, outputPath);
+
+            // Save G-code file for analysis before cleanup
+            try {
+                Path savedGcodeDir = Paths.get("/tmp/prusa-gcode-output");
+                Files.createDirectories(savedGcodeDir);
+
+                String savedFilename = modelFilePath.getFileName().toString()
+                    .replaceAll("\\.(stl|obj|3mf)$", "_output.gcode");
+                Path savedGcodePath = savedGcodeDir.resolve(savedFilename);
+
+                Files.copy(outputPath, savedGcodePath,
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                log.info("💾 Saved G-code for analysis: {}", savedGcodePath);
+            } catch (IOException e) {
+                log.warn("⚠️ Could not save G-code file for analysis: {}", e.getMessage());
+            }
 
             // Clean up output file
             try {
@@ -267,8 +295,9 @@ public class PrintQuotationService {
         // Also support older format: "filament used = 0.67g"
         Pattern weightPatternLegacy = Pattern.compile(".*filament used\\s*=\\s*([0-9.]+)\\s*g.*", Pattern.CASE_INSENSITIVE);
         // PrusaSlicer format: "; estimated printing time (normal mode) = 5m 33s"
-        Pattern timePattern = Pattern.compile(".*estimated printing time.*=\\s*([0-9]+)m\\s*([0-9]+)s.*", Pattern.CASE_INSENSITIVE);
-        Pattern timeHoursMinutesPattern = Pattern.compile(".*estimated printing time.*=\\s*([0-9]+)h\\s*([0-9]+)m.*", Pattern.CASE_INSENSITIVE);
+        // Only match normal mode, not silent mode
+        Pattern timePattern = Pattern.compile(".*estimated printing time.*\\(normal mode\\).*=\\s*([0-9]+)m\\s*([0-9]+)s.*", Pattern.CASE_INSENSITIVE);
+        Pattern timeHoursMinutesPattern = Pattern.compile(".*estimated printing time.*\\(normal mode\\).*=\\s*([0-9]+)h\\s*([0-9]+)m.*", Pattern.CASE_INSENSITIVE);
 
         // Parse output lines
         String[] lines = output.split("\n");
@@ -366,7 +395,10 @@ public class PrintQuotationService {
                 }
 
                 // Look for PrusaSlicer time: "; estimated printing time (normal mode) = 5m 33s"
-                if (line.toLowerCase().contains("estimated printing time") && line.contains("=")) {
+                // Only parse normal mode time, ignore silent mode
+                if (line.toLowerCase().contains("estimated printing time") &&
+                    line.toLowerCase().contains("normal mode") &&
+                    line.contains("=")) {
                     // Try minutes and seconds format: "5m 33s"
                     Pattern timePatternMS = Pattern.compile(".*=\\s*([0-9]+)m\\s*([0-9]+)s.*");
                     Matcher matcherMS = timePatternMS.matcher(line);
@@ -453,6 +485,16 @@ public class PrintQuotationService {
                 .pricePerMinute(pricePerMinute)
                 .materialCost(materialCost)
                 .timeCost(timeCost)
+                // Include new parameters in response
+                .brimType(request.getBrimType())
+                .brimWidth(request.getBrimWidth())
+                .supportType(request.getSupportType())
+                .topShellLayers(request.getTopShellLayers())
+                .bottomShellLayers(request.getBottomShellLayers())
+                .infillPattern(request.getInfillPattern())
+                .seam(request.getSeam())
+                .autoOrient(request.getAutoOrient())
+                .colorChange(request.getColorChange())
                 .build();
     }
 

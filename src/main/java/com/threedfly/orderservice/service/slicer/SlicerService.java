@@ -1,5 +1,6 @@
 package com.threedfly.orderservice.service.slicer;
 
+import com.threedfly.orderservice.dto.PrintQuotationRequest;
 import java.nio.file.Path;
 
 /**
@@ -15,15 +16,11 @@ public interface SlicerService {
      * @param modelFilePath  Path to the 3D model file to slice
      * @param iniPath        Path to the slicer configuration INI file
      * @param outputPath     Path where the output G-code should be saved
-     * @param layerHeight    Layer height in mm (e.g., 0.2)
-     * @param shells         Number of perimeter shells
-     * @param infill         Infill percentage (e.g., 10 for 10%)
-     * @param supporters     Whether to enable support material
+     * @param request        Full print quotation request with all parameters
      * @return ProcessBuilder configured with slicer-specific command and arguments
      */
     ProcessBuilder buildSlicerCommand(Path modelFilePath, Path iniPath, Path outputPath,
-                                       Double layerHeight, Integer shells, Integer infill,
-                                       Boolean supporters);
+                                       PrintQuotationRequest request);
 
     /**
      * Checks if this slicer service supports the given slicer type.

@@ -1,10 +1,14 @@
 package com.threedfly.orderservice.service.slicer;
 
+import com.threedfly.orderservice.dto.PrintQuotationRequest;
+import com.threedfly.orderservice.enums.BrimType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * PrusaSlicer implementation of the SlicerService.
@@ -21,41 +25,107 @@ public class PrusaSlicerService implements SlicerService {
 
     @Override
     public ProcessBuilder buildSlicerCommand(Path modelFilePath, Path iniPath, Path outputPath,
-                                              Double layerHeight, Integer shells, Integer infill,
-                                              Boolean supporters) {
+                                              PrintQuotationRequest request) {
         // Convert paths to absolute strings to prevent injection
         String absoluteIniPath = iniPath.toAbsolutePath().normalize().toString();
         String absoluteOutputPath = outputPath.toAbsolutePath().normalize().toString();
         String absoluteModelPath = modelFilePath.toAbsolutePath().normalize().toString();
 
-        // Build safe command arguments - validated inputs are converted directly to strings
-        // These values are already validated in PrintQuotationService.validateNumericParameter()
-        String layerHeightArg = Double.toString(layerHeight);
-        String shellsArg = Integer.toString(shells);
-        String infillArg = Integer.toString(infill) + "%";
+        // Build command arguments list
+        List<String> command = new ArrayList<>();
+        command.add(slicerPath);
+        command.add("--load");
+        command.add(absoluteIniPath);
 
-        // Support material settings - need to control both support_material and support_material_auto
-        // to ensure supports are properly enabled/disabled regardless of INI defaults
-        String supportMaterialArg = supporters ? "--support-material=1" : "--support-material=0";
-        String supportAutoArg = supporters ? "--support-material-auto=1" : "--support-material-auto=0";
+        // Layer height
+        command.add("--layer-height");
+        command.add(String.format("%.2f", request.getLayerHeight()));
 
-        log.debug("🔧 Building PrusaSlicer command with parameters: layerHeight={}, shells={}, infill={}%, supporters={}",
-                layerHeight, shells, infill, supporters);
+        // Perimeters (walls)
+        command.add("--perimeters");
+        command.add(Integer.toString(request.getShells()));
 
-        // PrusaSlicer command with dynamic parameters
-        return new ProcessBuilder(
-                slicerPath,
-                "--load", absoluteIniPath,
-                "--layer-height", layerHeightArg,
-                "--perimeters", shellsArg,
-                "--fill-density", infillArg,
-                supportMaterialArg,
-                supportAutoArg,
-                "--output", absoluteOutputPath,
-                "--export-gcode",
-                "--dont-arrange",  // PrusaSlicer-specific flag
-                absoluteModelPath
-        );
+        // Infill density
+        command.add("--fill-density");
+        command.add(request.getInfill() + "%");
+
+        // Infill pattern
+        if (request.getInfillPattern() != null) {
+            command.add("--fill-pattern");
+            command.add(request.getInfillPattern().getValue());
+        }
+
+        // Top solid layers
+        if (request.getTopShellLayers() != null) {
+            command.add("--top-solid-layers");
+            command.add(Integer.toString(request.getTopShellLayers()));
+        }
+
+        // Bottom solid layers
+        if (request.getBottomShellLayers() != null) {
+            command.add("--bottom-solid-layers");
+            command.add(Integer.toString(request.getBottomShellLayers()));
+        }
+
+        // Brim settings
+        if (request.getBrimType() != null && request.getBrimType() != BrimType.NONE) {
+            int brimWidth = (request.getBrimWidth() != null) ? request.getBrimWidth() : 5;
+            command.add("--brim-width");
+            command.add(Integer.toString(brimWidth));
+        } else {
+            command.add("--brim-width");
+            command.add("0");
+        }
+
+        // Support material settings
+        if (request.getSupporters() != null && request.getSupporters()) {
+            command.add("--support-material=1");
+            command.add("--support-material-auto=1");
+
+            // Support style - Use organic supports (PrusaSlicer's tree support equivalent)
+            // PrusaSlicer uses --support-material-style for organic (tree) supports
+            // Valid values: grid, snug, organic
+            if (request.getSupportType() != null) {
+                String style = switch (request.getSupportType()) {
+                    case TREE_AUTO, TREE, ORGANIC -> "organic"; // Tree supports = organic style
+                    case NORMAL -> "grid"; // Normal supports = grid style
+                };
+                command.add("--support-material-style");
+                command.add(style);
+            } else {
+                // Default to organic for better support efficiency
+                command.add("--support-material-style");
+                command.add("organic");
+            }
+        } else {
+            command.add("--support-material=0");
+            command.add("--support-material-auto=0");
+        }
+
+        // Seam position
+        if (request.getSeam() != null) {
+            command.add("--seam-position");
+            command.add(request.getSeam().getValue());
+        }
+
+        // Output and export settings
+        command.add("--output");
+        command.add(absoluteOutputPath);
+        command.add("--export-gcode");
+        command.add("--center");
+        command.add("110,110");  // Center model on 220x220mm bed (works for both STL and 3MF)
+
+        // Input model file
+        command.add(absoluteModelPath);
+
+        log.debug("🔧 Building PrusaSlicer command with parameters: layerHeight={}, shells={}, infill={}%, " +
+                  "topLayers={}, bottomLayers={}, brimWidth={}, supporters={}, supportType={}, infillPattern={}",
+                request.getLayerHeight(), request.getShells(), request.getInfill(),
+                request.getTopShellLayers(), request.getBottomShellLayers(),
+                request.getBrimWidth(), request.getSupporters(), request.getSupportType(),
+                request.getInfillPattern());
+
+        return new ProcessBuilder(command);
     }
 
     @Override

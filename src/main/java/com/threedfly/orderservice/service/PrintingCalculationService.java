@@ -51,15 +51,15 @@ public class PrintingCalculationService {
             
             try {
                 // Process with Bambu slicer
-                SlicingResult slicingResult = processWithBambuSlicer(tempFilePath);
+//                SlicingResult slicingResult = processWithBambuSlicer(tempFilePath);
                 
-                if (!slicingResult.isSuccess()) {
-                    return createErrorResponse("Slicing failed: " + slicingResult.getErrorMessage(), stlFile.getOriginalFilename());
-                }
-
-                // Calculate pricing
-                return calculatePricing(slicingResult, stlFile.getOriginalFilename());
-                
+//                if (!slicingResult.isSuccess()) {
+//                    return createErrorResponse("Slicing failed: " + slicingResult.getErrorMessage(), stlFile.getOriginalFilename());
+//                }
+//
+//                // Calculate pricing
+//                return calculatePricing(slicingResult, stlFile.getOriginalFilename());
+                return null;
             } finally {
                 // Clean up temporary file
                 cleanupTemporaryFile(tempFilePath);
@@ -96,7 +96,7 @@ public class PrintingCalculationService {
         return tempFilePath;
     }
 
-    private SlicingResult processWithBambuSlicer(Path stlFilePath) {
+    private SlicingResult processWithstBambuSlicer(Path stlFilePath) {
         log.info("⚙️ Processing STL file with Bambu slicer: {}", stlFilePath);
         
         try {

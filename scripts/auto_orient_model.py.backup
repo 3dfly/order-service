@@ -1,0 +1,211 @@
+#!/usr/bin/env python3
+"""
+Auto-orient 3D models for optimal 3D printing.
+This script analyzes a 3D model and rotates it to the optimal orientation
+for FDM printing (largest flat surface on the build plate).
+"""
+
+import sys
+import trimesh
+import numpy as np
+
+
+def auto_orient_for_printing(input_file, output_file):
+    """
+    Automatically orient a 3D model for optimal printing.
+
+    Args:
+        input_file: Path to input STL/OBJ/3MF file
+        output_file: Path to output file (will be STL)
+
+    Returns:
+        dict: Information about the orientation (rotation applied, surface area, etc.)
+    """
+    try:
+        # Load the mesh
+        mesh = trimesh.load(input_file)
+
+        # If it's a Scene (e.g., from 3MF), get the combined mesh
+        if isinstance(mesh, trimesh.Scene):
+            mesh = mesh.dump(concatenate=True)
+
+        # Store original bounds for comparison
+        original_bounds = mesh.bounds
+        original_height = original_bounds[1][2] - original_bounds[0][2]
+
+        # Method 1: Simple approach - try all 6 primary orientations
+        # and pick the one with minimum height
+        best_height = float('inf')
+        best_transform = np.eye(4)
+
+        # Try 6 orientations: original + 5 rotations
+        test_orientations = [
+            (0, [1, 0, 0]),  # Original
+            (np.pi/2, [1, 0, 0]),  # Rotate 90° around X
+            (-np.pi/2, [1, 0, 0]),  # Rotate -90° around X
+            (np.pi/2, [0, 1, 0]),  # Rotate 90° around Y
+            (-np.pi/2, [0, 1, 0]),  # Rotate -90° around Y
+            (np.pi, [1, 0, 0]),  # Rotate 180° around X
+        ]
+
+        for angle, axis in test_orientations:
+            test_mesh = mesh.copy()
+            if angle != 0:
+                rotation_matrix = trimesh.transformations.rotation_matrix(angle, axis)
+                test_mesh.apply_transform(rotation_matrix)
+
+            bounds = test_mesh.bounds
+            height = bounds[1][2] - bounds[0][2]
+
+            # Find bottom area
+            test_normals = test_mesh.face_normals
+            bottom_faces_mask = test_normals[:, 2] < -0.8
+            bottom_area = np.sum(test_mesh.area_faces[bottom_faces_mask])
+
+            # Score: heavily favor minimum height, with some bonus for large bottom
+            area_factor = min(bottom_area / test_mesh.area, 0.3)  # Cap at 0.3
+            score = -height + (area_factor * 20)  # Mainly minimize height
+
+            if score > -best_height:
+                best_height = height
+                best_transform = rotation_matrix if angle != 0 else np.eye(4)
+
+        # FALLBACK: If simple method doesn't help, try detailed face analysis
+        if best_height >= original_height * 0.95:  # If not much improvement
+            # Get all face normals
+            face_normals = mesh.face_normals
+            face_areas = mesh.area_faces
+
+            # Find faces that could be good bottom surfaces (large, flat)
+            # We'll try each face as a potential bottom and score it
+            best_score = float('-inf')
+
+            # Only check the top N largest faces to save computation time
+            largest_faces_indices = np.argsort(face_areas)[-20:]  # Top 20 largest faces
+
+            for face_idx in largest_faces_indices:
+                normal = face_normals[face_idx]
+                area = face_areas[face_idx]
+
+                # Skip if this face is too small (less than 5% of total surface area)
+                if area < 0.05 * mesh.area:
+                    continue
+
+            # Calculate rotation to align this normal with -Z (downward)
+            target = np.array([0, 0, -1])
+
+            # Skip if already aligned
+            if np.allclose(normal, target, atol=0.01):
+                continue
+
+            # Calculate rotation axis and angle
+            axis = np.cross(normal, target)
+            axis_length = np.linalg.norm(axis)
+
+            if axis_length < 1e-6:  # Vectors are parallel or anti-parallel
+                if np.dot(normal, target) < 0:  # Anti-parallel, 180 degree rotation
+                    axis = np.array([1, 0, 0])  # Arbitrary perpendicular axis
+                    angle = np.pi
+                else:  # Already aligned
+                    continue
+            else:
+                axis = axis / axis_length
+                angle = np.arccos(np.clip(np.dot(normal, target), -1.0, 1.0))
+
+            # Create rotation matrix
+            rotation_matrix = trimesh.transformations.rotation_matrix(angle, axis)
+
+            # Apply rotation to a copy of the mesh
+            test_mesh = mesh.copy()
+            test_mesh.apply_transform(rotation_matrix)
+
+            # Calculate score for this orientation
+            # Higher score = better orientation
+            bounds = test_mesh.bounds
+            height = bounds[1][2] - bounds[0][2]
+
+            # Find the bottom face area (faces with normals pointing down)
+            test_normals = test_mesh.face_normals
+            bottom_faces_mask = test_normals[:, 2] < -0.9  # Faces pointing mostly downward
+            bottom_area = np.sum(test_mesh.area_faces[bottom_faces_mask])
+
+            # Score: maximize bottom surface area, minimize height
+            # Normalized scores to balance the two factors
+            area_score = bottom_area / test_mesh.area  # 0 to 1
+            height_score = 1.0 - (height / (original_height * 1.5))  # Penalize tall orientations
+
+            # UPDATED: Weight height reduction MORE to prevent tall orientations
+            # For 3D printing, shorter prints are almost always better
+            score = area_score * 1.5 + height_score * 2.5  # Weight height reduction more!
+
+            if score > best_score:
+                best_score = score
+                best_transform = rotation_matrix
+
+        # Apply best transformation
+        if not np.allclose(best_transform, np.eye(4)):
+            mesh.apply_transform(best_transform)
+
+        # Center the mesh on the XY plane (move to origin)
+        # This ensures the model sits on Z=0 (build plate)
+        bounds = mesh.bounds
+        translation = np.eye(4)
+        translation[0:3, 3] = [
+            -(bounds[0][0] + bounds[1][0]) / 2,  # Center X
+            -(bounds[0][1] + bounds[1][1]) / 2,  # Center Y
+            -bounds[0][2]  # Move bottom to Z=0
+        ]
+        mesh.apply_transform(translation)
+
+        # Export the oriented mesh
+        mesh.export(output_file)
+
+        # Calculate final statistics
+        final_bounds = mesh.bounds
+        final_height = final_bounds[1][2] - final_bounds[0][2]
+
+        # Find bottom area
+        bottom_faces_mask = mesh.face_normals[:, 2] < -0.9
+        bottom_area = np.sum(mesh.area_faces[bottom_faces_mask])
+
+        return {
+            'success': True,
+            'original_height': float(original_height),
+            'final_height': float(final_height),
+            'height_reduction': float(original_height - final_height),
+            'bottom_surface_area': float(bottom_area),
+            'bottom_area_percentage': float(bottom_area / mesh.area * 100),
+            'rotation_applied': not np.allclose(best_transform, np.eye(4))
+        }
+
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+
+if __name__ == '__main__':
+    if len(sys.argv) != 3:
+        print("Usage: auto_orient_model.py <input_file> <output_file>")
+        print("Example: auto_orient_model.py model.stl model_oriented.stl")
+        sys.exit(1)
+
+    input_file = sys.argv[1]
+    output_file = sys.argv[2]
+
+    print(f"Auto-orienting {input_file}...")
+    result = auto_orient_for_printing(input_file, output_file)
+
+    if result['success']:
+        print("✅ Success!")
+        print(f"   Original height: {result['original_height']:.2f} mm")
+        print(f"   Final height: {result['final_height']:.2f} mm")
+        print(f"   Height reduction: {result['height_reduction']:.2f} mm")
+        print(f"   Bottom surface area: {result['bottom_surface_area']:.2f} mm²")
+        print(f"   Bottom area: {result['bottom_area_percentage']:.1f}% of total")
+        print(f"   Rotation applied: {result['rotation_applied']}")
+        print(f"   Output saved to: {output_file}")
+    else:
+        print(f"❌ Error: {result['error']}")
+        sys.exit(1)

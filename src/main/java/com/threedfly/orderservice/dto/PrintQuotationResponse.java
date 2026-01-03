@@ -1,5 +1,9 @@
 package com.threedfly.orderservice.dto;
 
+import com.threedfly.orderservice.enums.BrimType;
+import com.threedfly.orderservice.enums.InfillPattern;
+import com.threedfly.orderservice.enums.SeamPosition;
+import com.threedfly.orderservice.enums.SupportType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -29,4 +33,15 @@ public class PrintQuotationResponse {
     private BigDecimal pricePerMinute;
     private BigDecimal materialCost;
     private BigDecimal timeCost;
+
+    // New optional parameters used in the quotation
+    private BrimType brimType;
+    private Integer brimWidth;
+    private SupportType supportType;
+    private Integer topShellLayers;
+    private Integer bottomShellLayers;
+    private InfillPattern infillPattern;
+    private SeamPosition seam;
+    private Boolean autoOrient;
+    private String colorChange;
 }
