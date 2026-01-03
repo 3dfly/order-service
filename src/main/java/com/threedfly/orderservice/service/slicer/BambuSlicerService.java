@@ -1,5 +1,6 @@
 package com.threedfly.orderservice.service.slicer;
 
+import com.threedfly.orderservice.dto.PrintQuotationRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -21,8 +22,12 @@ public class BambuSlicerService implements SlicerService {
 
     @Override
     public ProcessBuilder buildSlicerCommand(Path modelFilePath, Path iniPath, Path outputPath,
-                                              Double layerHeight, Integer shells, Integer infill,
-                                              Boolean supporters) {
+                                              PrintQuotationRequest request) {
+        // Extract individual parameters from request
+        Double layerHeight = request.getLayerHeight();
+        Integer shells = request.getShells();
+        Integer infill = request.getInfill();
+        Boolean supporters = request.getSupporters();
         // Convert paths to absolute strings to prevent injection
         String absoluteIniPath = iniPath.toAbsolutePath().normalize().toString();
         String absoluteOutputPath = outputPath.toAbsolutePath().normalize().toString();
@@ -30,7 +35,7 @@ public class BambuSlicerService implements SlicerService {
 
         // Build safe command arguments - validated inputs are converted directly to strings
         // These values are already validated in PrintQuotationService.validateNumericParameter()
-        String layerHeightArg = Double.toString(layerHeight);
+        String layerHeightArg = String.format("%.2f", layerHeight);
         String shellsArg = Integer.toString(shells);
         String infillArg = Integer.toString(infill) + "%";
 
@@ -53,6 +58,7 @@ public class BambuSlicerService implements SlicerService {
                 supportAutoArg,
                 "--output", absoluteOutputPath,
                 "--export-gcode",
+                "--center", "110,110",  // Center model on 220x220mm bed (works for both STL and 3MF)
                 absoluteModelPath
         );
     }
