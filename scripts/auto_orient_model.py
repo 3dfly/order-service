@@ -54,6 +54,16 @@ def auto_orient_for_printing(input_file, output_file):
                 rotation_matrix = trimesh.transformations.rotation_matrix(angle, axis)
                 test_mesh.apply_transform(rotation_matrix)
 
+            # Center on XY and place bottom at Z=0
+            bounds = test_mesh.bounds
+            temp_translation = np.eye(4)
+            temp_translation[0:3, 3] = [
+                -(bounds[0][0] + bounds[1][0]) / 2,
+                -(bounds[0][1] + bounds[1][1]) / 2,
+                -bounds[0][2]
+            ]
+            test_mesh.apply_transform(temp_translation)
+
             bounds = test_mesh.bounds
             height = bounds[1][2] - bounds[0][2]
 
@@ -61,6 +71,22 @@ def auto_orient_for_printing(input_file, output_file):
             test_normals = test_mesh.face_normals
             bottom_faces_mask = test_normals[:, 2] < -0.8
             bottom_area = np.sum(test_mesh.area_faces[bottom_faces_mask])
+
+            # Check first layer validity by slicing at multiple heights
+            first_layer_valid = False
+            for test_height in [0.12, 0.16, 0.2, 0.28]:
+                try:
+                    slice_2d = test_mesh.section(plane_origin=[0, 0, test_height/2],
+                                                plane_normal=[0, 0, 1])
+                    if slice_2d is not None and hasattr(slice_2d, 'area') and slice_2d.area > 1.0:
+                        first_layer_valid = True
+                        break
+                except:
+                    pass
+
+            # Skip orientations that would result in invalid first layers
+            if not first_layer_valid:
+                continue
 
             # Prefer shorter height, with tie-breaker for larger bottom area
             is_better = (height < best_height * 0.98) or \
