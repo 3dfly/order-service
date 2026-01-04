@@ -81,6 +81,25 @@ class ManualParameterExtractorTest {
     }
 
     @Test
+    void testExtractParameters_WithEmptyRequest_ThrowsException() throws IOException {
+        // Given
+        Path stlFile = tempDir.resolve("test.stl");
+        Files.createFile(stlFile);
+
+        // Create a non-null request with all null fields (simulates @ModelAttribute behavior)
+        PrintCalculationRequest emptyRequest = PrintCalculationRequest.builder().build();
+
+        // When & Then
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> extractor.extractParameters(stlFile, emptyRequest)
+        );
+
+        assertTrue(exception.getMessage().contains("Request parameters are required"));
+        assertTrue(exception.getMessage().contains("Required fields"));
+    }
+
+    @Test
     void testRequiresManualParameters_ReturnsTrue() {
         // When & Then
         assertTrue(extractor.requiresManualParameters(),
