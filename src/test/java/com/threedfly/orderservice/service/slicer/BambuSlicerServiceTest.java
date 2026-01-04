@@ -1,6 +1,7 @@
 package com.threedfly.orderservice.service.slicer;
 
 import org.junit.jupiter.api.BeforeEach;
+import com.threedfly.orderservice.dto.PrintQuotationRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -53,9 +54,15 @@ class BambuSlicerServiceTest {
         Path iniPath = Paths.get("/tmp/config.ini");
         Path outputPath = Paths.get("/tmp/output.gcode");
 
+        PrintQuotationRequest request = PrintQuotationRequest.builder()
+                .layerHeight(0.2)
+                .shells(3)
+                .infill(15)
+                .supporters(true)
+                .build();
+
         ProcessBuilder processBuilder = bambuSlicerService.buildSlicerCommand(
-                modelPath, iniPath, outputPath,
-                0.2, 3, 15, true
+                modelPath, iniPath, outputPath, request
         );
 
         List<String> command = processBuilder.command();
@@ -81,9 +88,15 @@ class BambuSlicerServiceTest {
         Path iniPath = Paths.get("/tmp/config.ini");
         Path outputPath = Paths.get("/tmp/output.gcode");
 
+        PrintQuotationRequest request = PrintQuotationRequest.builder()
+                .layerHeight(0.15)
+                .shells(2)
+                .infill(10)
+                .supporters(false)
+                .build();
+
         ProcessBuilder processBuilder = bambuSlicerService.buildSlicerCommand(
-                modelPath, iniPath, outputPath,
-                0.15, 2, 10, false
+                modelPath, iniPath, outputPath, request
         );
 
         List<String> command = processBuilder.command();
@@ -99,9 +112,15 @@ class BambuSlicerServiceTest {
         Path iniPath = Paths.get("/tmp/config.ini");
         Path outputPath = Paths.get("/tmp/output.gcode");
 
+        PrintQuotationRequest request = PrintQuotationRequest.builder()
+                .layerHeight(0.25)
+                .shells(5)
+                .infill(20)
+                .supporters(true)
+                .build();
+
         ProcessBuilder processBuilder = bambuSlicerService.buildSlicerCommand(
-                modelPath, iniPath, outputPath,
-                0.25, 5, 20, true
+                modelPath, iniPath, outputPath, request
         );
 
         List<String> command = processBuilder.command();
@@ -118,9 +137,15 @@ class BambuSlicerServiceTest {
         Path iniPath = Paths.get("/tmp/config.ini");
         Path outputPath = Paths.get("/tmp/output.gcode");
 
+        PrintQuotationRequest request = PrintQuotationRequest.builder()
+                .layerHeight(0.2)
+                .shells(3)
+                .infill(15)
+                .supporters(true)
+                .build();
+
         ProcessBuilder processBuilder = bambuSlicerService.buildSlicerCommand(
-                modelPath, iniPath, outputPath,
-                0.2, 3, 15, true
+                modelPath, iniPath, outputPath, request
         );
 
         List<String> command = processBuilder.command();
@@ -136,9 +161,15 @@ class BambuSlicerServiceTest {
         Path iniPath = Paths.get("relative/config.ini");
         Path outputPath = Paths.get("relative/output.gcode");
 
+        PrintQuotationRequest request = PrintQuotationRequest.builder()
+                .layerHeight(0.2)
+                .shells(3)
+                .infill(15)
+                .supporters(true)
+                .build();
+
         ProcessBuilder processBuilder = bambuSlicerService.buildSlicerCommand(
-                modelPath, iniPath, outputPath,
-                0.2, 3, 15, true
+                modelPath, iniPath, outputPath, request
         );
 
         List<String> command = processBuilder.command();

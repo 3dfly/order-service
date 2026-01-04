@@ -1,5 +1,6 @@
 package com.threedfly.orderservice.service.slicer;
 
+import com.threedfly.orderservice.dto.PrintQuotationRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -53,9 +54,15 @@ class PrusaSlicerServiceTest {
         Path iniPath = Paths.get("/tmp/config.ini");
         Path outputPath = Paths.get("/tmp/output.gcode");
 
+        PrintQuotationRequest request = PrintQuotationRequest.builder()
+                .layerHeight(0.2)
+                .shells(3)
+                .infill(15)
+                .supporters(true)
+                .build();
+
         ProcessBuilder processBuilder = prusaSlicerService.buildSlicerCommand(
-                modelPath, iniPath, outputPath,
-                0.2, 3, 15, true
+                modelPath, iniPath, outputPath, request
         );
 
         List<String> command = processBuilder.command();
@@ -72,7 +79,7 @@ class PrusaSlicerServiceTest {
         assertTrue(command.contains("--support-material=1"));
         assertTrue(command.contains("--support-material-auto=1"));
         assertTrue(command.contains("--export-gcode"));
-        assertTrue(command.contains("--align-xy")); // Align model to bed center
+        assertTrue(command.contains("--center")); // Center model on bed
         assertTrue(command.contains(modelPath.toAbsolutePath().normalize().toString()));
     }
 
@@ -82,9 +89,15 @@ class PrusaSlicerServiceTest {
         Path iniPath = Paths.get("/tmp/config.ini");
         Path outputPath = Paths.get("/tmp/output.gcode");
 
+        PrintQuotationRequest request = PrintQuotationRequest.builder()
+                .layerHeight(0.15)
+                .shells(2)
+                .infill(10)
+                .supporters(false)
+                .build();
+
         ProcessBuilder processBuilder = prusaSlicerService.buildSlicerCommand(
-                modelPath, iniPath, outputPath,
-                0.15, 2, 10, false
+                modelPath, iniPath, outputPath, request
         );
 
         List<String> command = processBuilder.command();
@@ -100,9 +113,15 @@ class PrusaSlicerServiceTest {
         Path iniPath = Paths.get("/tmp/config.ini");
         Path outputPath = Paths.get("/tmp/output.gcode");
 
+        PrintQuotationRequest request = PrintQuotationRequest.builder()
+                .layerHeight(0.25)
+                .shells(5)
+                .infill(20)
+                .supporters(true)
+                .build();
+
         ProcessBuilder processBuilder = prusaSlicerService.buildSlicerCommand(
-                modelPath, iniPath, outputPath,
-                0.25, 5, 20, true
+                modelPath, iniPath, outputPath, request
         );
 
         List<String> command = processBuilder.command();
@@ -114,21 +133,27 @@ class PrusaSlicerServiceTest {
     }
 
     @Test
-    void testBuildSlicerCommand_ContainsDontArrangeFlag() {
+    void testBuildSlicerCommand_ContainsCenterFlag() {
         Path modelPath = Paths.get("/tmp/model.stl");
         Path iniPath = Paths.get("/tmp/config.ini");
         Path outputPath = Paths.get("/tmp/output.gcode");
 
+        PrintQuotationRequest request = PrintQuotationRequest.builder()
+                .layerHeight(0.2)
+                .shells(3)
+                .infill(15)
+                .supporters(true)
+                .build();
+
         ProcessBuilder processBuilder = prusaSlicerService.buildSlicerCommand(
-                modelPath, iniPath, outputPath,
-                0.2, 3, 15, true
+                modelPath, iniPath, outputPath, request
         );
 
         List<String> command = processBuilder.command();
 
-        // Verify model alignment flag is present
-        assertTrue(command.contains("--align-xy"),
-                "PrusaSlicer should include --align-xy flag for model positioning");
+        // Verify model center flag is present
+        assertTrue(command.contains("--center"),
+                "PrusaSlicer should include --center flag for model positioning");
     }
 
     @Test
@@ -137,9 +162,15 @@ class PrusaSlicerServiceTest {
         Path iniPath = Paths.get("relative/config.ini");
         Path outputPath = Paths.get("relative/output.gcode");
 
+        PrintQuotationRequest request = PrintQuotationRequest.builder()
+                .layerHeight(0.2)
+                .shells(3)
+                .infill(15)
+                .supporters(true)
+                .build();
+
         ProcessBuilder processBuilder = prusaSlicerService.buildSlicerCommand(
-                modelPath, iniPath, outputPath,
-                0.2, 3, 15, true
+                modelPath, iniPath, outputPath, request
         );
 
         List<String> command = processBuilder.command();
