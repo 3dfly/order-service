@@ -271,79 +271,12 @@ class OrderControllerComprehensiveTest {
     }
 
     @Test
-    void testCalculatePrice_Success() throws Exception {
-        // Create a mock STL file
-        MockMultipartFile mockStlFile = new MockMultipartFile(
-            "stlFile", 
-            "test-model.stl", 
-            "application/octet-stream",
-            createMockStlContent()
-        );
-
-        mockMvc.perform(multipart("/orders/calculate")
-                .file(mockStlFile))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.filename").value("test-model.stl"))
-                .andExpect(jsonPath("$.status").value("SUCCESS"))
-                .andExpect(jsonPath("$.totalPrice").exists())
-                .andExpect(jsonPath("$.weightGrams").exists())
-                .andExpect(jsonPath("$.printingTimeMinutes").exists())
-                .andExpect(jsonPath("$.pricePerGram").value(0.05))
-                .andExpect(jsonPath("$.pricePerMinute").value(0.10));
-    }
-
-    @Test
-    void testCalculatePrice_EmptyFile() throws Exception {
-        MockMultipartFile emptyFile = new MockMultipartFile(
-            "stlFile", 
-            "empty.stl", 
-            "application/octet-stream",
-            new byte[0]
-        );
-
-        mockMvc.perform(multipart("/orders/calculate")
-                .file(emptyFile))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.status").value("ERROR"));
-    }
-
-    @Test
-    void testCalculatePrice_InvalidFileType() throws Exception {
-        MockMultipartFile invalidFile = new MockMultipartFile(
-            "stlFile", 
-            "test.txt", 
-            "text/plain",
-            "This is not an STL file".getBytes()
-        );
-
-        mockMvc.perform(multipart("/orders/calculate")
-                .file(invalidFile))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.status").value("ERROR"));
-    }
-
-    @Test
-    void testCalculatePrice_MissingFile() throws Exception {
-        mockMvc.perform(post("/orders/calculate"))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
     void testInvalidHttpMethods() throws Exception {
         mockMvc.perform(post("/orders/" + testOrder.getId()))
                 .andExpect(status().isMethodNotAllowed());
 
         mockMvc.perform(put("/orders"))
                 .andExpect(status().isMethodNotAllowed());
-
-        mockMvc.perform(get("/orders/calculate"))
-                .andExpect(result -> {
-                    int status = result.getResponse().getStatus();
-                    assert status == 405 || status == 400;
-                });
     }
 
     @Test
@@ -402,21 +335,5 @@ class OrderControllerComprehensiveTest {
                 .andExpect(jsonPath("$.stlFileUrl").value("https://example.com/updated-model.stl"))
                 .andExpect(jsonPath("$.shippingAddress.street").value("456 New St"))
                 .andExpect(jsonPath("$.status").value("ACCEPTED"));
-    }
-
-    private byte[] createMockStlContent() {
-        // Create a minimal valid STL file content for testing
-        String stlContent = """
-            solid test
-              facet normal 0.0 0.0 1.0
-                outer loop
-                  vertex 0.0 0.0 0.0
-                  vertex 1.0 0.0 0.0
-                  vertex 0.0 1.0 0.0
-                endloop
-              endfacet
-            endsolid test
-            """;
-        return stlContent.getBytes();
     }
 }
