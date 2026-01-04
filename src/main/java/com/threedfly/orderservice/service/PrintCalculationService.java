@@ -41,6 +41,7 @@ public class PrintCalculationService {
     private final PrintingPricingConfig pricingConfig;
     private final MaterialCombinationValidator materialValidator;
     private final SlicerServiceFactory slicerServiceFactory;
+    private final ParameterExtractorFactory extractorFactory;
 
     @Value("${printing.slicer.type}")
     private String slicerType;
@@ -55,49 +56,59 @@ public class PrintCalculationService {
         // 1. Validate file type
         ModelFileType fileType = validateAndDetectFileType(file);
 
-        // 2. Validate technology-material combination
-        materialValidator.validate(request.getTechnology(), request.getMaterial());
-
-        // 3. Get base INI configuration
-        String baseIniFile = iniConfigurationMapper.getConfigurationFile(
-                request.getTechnology(),
-                request.getMaterial(),
-                request.getLayerHeight(),
-                request.getSupporters()
-        );
-        Path baseIniPath = iniConfigurationMapper.getConfigurationPath(baseIniFile);
-
-        log.info("🔧 Using base INI configuration: {}", baseIniFile);
-
-        // 4. Generate dynamic INI with custom parameters
+        // 2. Save file temporarily first (needed for both extraction and slicing)
         Path dynamicIniPath = null;
         Path tempFilePath = null;
         Path orientedFilePath = null;
         try {
-            dynamicIniPath = dynamicIniGenerator.generateDynamicIni(baseIniPath, request);
-            log.info("📝 Generated dynamic INI with custom parameters");
-
-            // 5. Save file temporarily
             tempFilePath = saveTemporaryFile(file);
 
-            // 6. Auto-orient model if requested
+            // 3. Extract parameters using appropriate extractor based on file type
+            ParameterExtractor extractor = extractorFactory.getExtractor(fileType);
+            log.info("📄 {} file detected - using {} extractor",
+                fileType, extractor.getClass().getSimpleName());
+
+            PrintCalculationRequest effectiveRequest =
+                extractor.extractParameters(tempFilePath, request);
+
+            log.info("✅ Parameters ready for processing");
+
+            // 4. Validate technology-material combination
+            materialValidator.validate(effectiveRequest.getTechnology(), effectiveRequest.getMaterial());
+
+            // 5. Get base INI configuration
+            String baseIniFile = iniConfigurationMapper.getConfigurationFile(
+                    effectiveRequest.getTechnology(),
+                    effectiveRequest.getMaterial(),
+                    effectiveRequest.getLayerHeight(),
+                    effectiveRequest.getSupporters()
+            );
+            Path baseIniPath = iniConfigurationMapper.getConfigurationPath(baseIniFile);
+
+            log.info("🔧 Using base INI configuration: {}", baseIniFile);
+
+            // 6. Generate dynamic INI with custom parameters
+            dynamicIniPath = dynamicIniGenerator.generateDynamicIni(baseIniPath, effectiveRequest);
+            log.info("📝 Generated dynamic INI with custom parameters");
+
+            // 7. Auto-orient model if requested
             orientedFilePath = modelOrientationService.orientModelIfNeeded(
-                    tempFilePath, request.getAutoOrient());
+                    tempFilePath, effectiveRequest.getAutoOrient());
             Path modelToSlice = orientedFilePath != null ? orientedFilePath : tempFilePath;
 
-            // 7. Process with slicer using dynamic INI
+            // 8. Process with slicer using dynamic INI
             SlicingResult slicingResult = processWithSlicer(
                     modelToSlice,
                     dynamicIniPath,
-                    request
+                    effectiveRequest
             );
 
             if (!slicingResult.isSuccess()) {
                 throw new FileParseException("Slicing failed: " + slicingResult.getErrorMessage());
             }
 
-            // 8. Calculate pricing
-            return calculatePricing(slicingResult, file.getOriginalFilename(), request);
+            // 9. Calculate pricing
+            return calculatePricing(slicingResult, file.getOriginalFilename(), effectiveRequest);
 
         } catch (IOException e) {
             throw new FileParseException("File processing failed: " + e.getMessage(), e);

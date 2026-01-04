@@ -3,6 +3,8 @@ package com.threedfly.orderservice.config;
 import com.threedfly.orderservice.exception.FileParseException;
 import com.threedfly.orderservice.exception.InvalidFileTypeException;
 import com.threedfly.orderservice.exception.InvalidParameterCombinationException;
+import com.threedfly.orderservice.exception.ValidationException;
+import jakarta.validation.ConstraintViolation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -64,6 +66,40 @@ public class GlobalExceptionHandler {
             Map<String, String> fieldErrors = new HashMap<>();
             for (FieldError error : ex.getBindingResult().getFieldErrors()) {
                 fieldErrors.put(error.getField(), error.getDefaultMessage());
+            }
+            errorResponse.put("fieldErrors", fieldErrors);
+        }
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<Map<String, Object>> handleValidationException(ValidationException ex) {
+        log.error("Manual validation exception occurred: {}", ex.getMessage());
+
+        // Check if this is a material combination validation error
+        boolean isMaterialCombinationError = ex.getViolations().stream()
+                .anyMatch(violation -> {
+                    // Check if the constraint annotation is ValidMaterialCombination
+                    return violation.getConstraintDescriptor().getAnnotation().annotationType().getSimpleName()
+                            .equals("ValidMaterialCombination");
+                });
+
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now());
+        errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
+
+        if (isMaterialCombinationError) {
+            // Return specific error format for material combination errors
+            errorResponse.put("error", "Invalid Parameter Combination");
+            String message = ex.getViolations().iterator().next().getMessage();
+            errorResponse.put("message", message);
+        } else {
+            // Return field errors for other validation failures
+            errorResponse.put("error", "Validation Failed");
+            Map<String, String> fieldErrors = new HashMap<>();
+            for (ConstraintViolation<?> violation : ex.getViolations()) {
+                fieldErrors.put(violation.getPropertyPath().toString(), violation.getMessage());
             }
             errorResponse.put("fieldErrors", fieldErrors);
         }

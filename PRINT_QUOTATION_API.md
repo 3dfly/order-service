@@ -7,23 +7,38 @@ The Print Quotation API now supports extended slicer parameters through dynamic 
 ## API Endpoint
 
 ```
-POST /api/v1/quotations/print
+POST /api/print/calculate
 Content-Type: multipart/form-data
 ```
 
+## File Type Behavior
+
+The API handles different file types differently:
+
+### 3MF Files
+- **Parameters**: Optional (extracted from file metadata)
+- **Behavior**: All print parameters are automatically extracted from the 3MF file's embedded configuration
+- **Fallback**: If parameters are missing in the file, default values are used
+- **Supported Format**: PrusaSlicer 3MF format
+
+### STL and OBJ Files
+- **Parameters**: Required (must be provided in request)
+- **Behavior**: Uses the parameters provided in the request
+- **Validation**: All required parameters must be present and valid
+
 ## Request Parameters
 
-### Required Parameters
+### Required Parameters (STL/OBJ files only)
 
 | Parameter | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | `file` | File | STL, OBJ, or 3MF | 3D model file to be quoted |
 | `technology` | String | FDM, SLS, or SLA | Printing technology |
-| `material` | String | PLA, ABS, PETG, or TPU | Material type |
+| `material` | String | PLA, ABS, PETG, TPU, or ASA | Material type |
 | `layerHeight` | Double | 0.05 - 0.4 mm | Layer height in millimeters |
 | `shells` | Integer | 1 - 5 | Number of perimeter shells |
 | `infill` | Integer | 5 - 20 % | Infill percentage |
-| `supporters` | Boolean | true/false | Enable support structures |
+| `supporters` | Boolean | true/false | Enable tree support structures (always tree type) |
 
 ### Optional Advanced Parameters
 
@@ -57,29 +72,35 @@ Content-Type: multipart/form-data
 - `crosshatch` - Crosshatch pattern
 - `cross3d` - 3D cross pattern
 - `honeycomb3d` - 3D honeycomb
+- `alignedrectilinear` - Aligned rectilinear pattern
+- `trihexagon` - Tri-hexagon pattern
+- `zigzag` - Zig-zag pattern
+- `crosszag` - Cross-zag pattern
+- `lockedzag` - Locked zag pattern
 
 #### Support Configuration
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `supportType` | Enum | NORMAL | Type of support structure (only if `supporters=true`) |
-
-**Supported Support Types:**
-- `normal` - Standard grid supports (default)
-- `tree` / `tree-auto` - Tree-style supports (uses less material)
-- `organic` - Organic supports (experimental)
+When `supporters=true`, the API automatically uses **tree-style supports** which:
+- Use less material than traditional supports
+- Are easier to remove
+- Provide better surface finish
+- Are optimized for organic shapes
 
 #### Brim Configuration
 
 | Parameter | Type | Default | Constraints | Description |
 |-----------|------|---------|-------------|-------------|
 | `brimType` | Enum | AUTO | - | Type of brim to add |
-| `brimWidth` | Integer | - | 0 - 20 mm | Width of the brim in mm |
+| `brimWidth` | Integer | - | 0 - 20 mm | Width of the brim in mm (optional) |
 
 **Supported Brim Types:**
 - `auto` - Automatic brim detection (default)
 - `none` - No brim
-- `custom` - Custom brim (requires `brimWidth`)
+- `outer_brim_only` - Brim only on outer perimeter
+- `inner_brim_only` - Brim only on inner holes
+- `outer_and_inner_brim` - Brim on both outer and inner perimeters
+- `painted` - Painted brim (manual selection in slicer)
+- `custom` - Custom brim configuration
 
 #### Seam Configuration
 
@@ -122,7 +143,6 @@ Content-Type: multipart/form-data
   "timeCost": 9.60,
   "brimType": "auto",
   "brimWidth": null,
-  "supportType": "normal",
   "topShellLayers": 5,
   "bottomShellLayers": 3,
   "infillPattern": "GRID",
@@ -131,6 +151,8 @@ Content-Type: multipart/form-data
   "colorChange": null
 }
 ```
+
+**Note**: When `supporters=true`, tree-style supports are automatically used. No `supportType` field is returned as the type is always tree.
 
 ## Auto-Orientation Feature
 
@@ -188,10 +210,12 @@ Format: Comma-separated layer numbers (e.g., "10,20,30")
 - Allows manual filament color change
 - Layer numbers must be valid positive integers
 
-## Example Request
+## Example Requests
+
+### STL/OBJ File (with parameters)
 
 ```bash
-curl -X POST "http://localhost:8080/api/v1/quotations/print" \
+curl -X POST "http://localhost:8080/api/print/calculate" \
   -H "Content-Type: multipart/form-data" \
   -F "file=@model.stl" \
   -F "technology=FDM" \
@@ -200,13 +224,22 @@ curl -X POST "http://localhost:8080/api/v1/quotations/print" \
   -F "shells=3" \
   -F "infill=15" \
   -F "supporters=true" \
-  -F "supportType=tree" \
   -F "topShellLayers=5" \
   -F "bottomShellLayers=3" \
   -F "infillPattern=gyroid" \
   -F "brimType=auto" \
   -F "seam=rear"
 ```
+
+### 3MF File (parameters extracted from file)
+
+```bash
+curl -X POST "http://localhost:8080/api/print/calculate" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@model.3mf"
+```
+
+Note: For 3MF files, all parameters are automatically extracted from the file's embedded configuration. Manual parameters are optional and will be ignored if provided.
 
 ## Implementation Details
 
@@ -265,12 +298,14 @@ formData.append('seam', 'rear');
 
 ## Best Practices
 
-1. **Start with defaults**: Only specify advanced parameters when needed
-2. **Test combinations**: Some parameter combinations may not work well together
-3. **Orient models manually**: Don't rely on autoOrient - it's not implemented
-4. **Use tree supports**: For complex geometries, tree supports use less material
-5. **Gyroid infill**: For strength with flexibility, consider gyroid pattern
-6. **Seam positioning**: Use `rear` seam position for aesthetic parts
+1. **Use 3MF when possible**: 3MF files preserve all slicer settings, making parameters automatic
+2. **Start with defaults**: Only specify advanced parameters when needed
+3. **Test combinations**: Some parameter combinations may not work well together
+4. **ASA for outdoor prints**: Use ASA material for parts exposed to sunlight or weather
+5. **Tree supports included**: Supporters are always tree-style for optimal material usage
+6. **Gyroid infill**: For strength with flexibility, consider gyroid pattern
+7. **Seam positioning**: Use `rear` seam position for aesthetic parts
+8. **Brim for small parts**: Use `outer_brim_only` for better bed adhesion on small prints
 
 ## Support
 
@@ -280,7 +315,17 @@ For issues or questions:
 
 ## Version History
 
-### v1.2.0 (Current)
+### v1.3.0 (Current)
+- ✅ **3MF Parameter Extraction**: Automatic extraction of print parameters from 3MF files
+- ✅ **Added ASA Material**: Support for ASA (weather-resistant) material
+- ✅ **Extended Infill Patterns**: Added 5 new patterns (alignedrectilinear, trihexagon, zigzag, crosszag, lockedzag)
+- ✅ **Extended Brim Types**: Added 4 new types (outer_brim_only, inner_brim_only, outer_and_inner_brim, painted)
+- ✅ **Tree Supports Always**: Simplified to always use tree-style supports when enabled
+- ✅ **File-Type Routing**: Different behavior for 3MF vs STL/OBJ files
+- Improved validation with better error messages
+- Updated endpoint to `/api/print/calculate`
+
+### v1.2.0
 - ✅ **Implemented auto-orientation** using Python/trimesh
 - Added automatic geometry analysis for optimal printing
 - Graceful fallback if Python not available
