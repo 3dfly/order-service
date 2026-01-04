@@ -1,6 +1,6 @@
 package com.threedfly.orderservice.service.slicer;
 
-import com.threedfly.orderservice.dto.PrintQuotationRequest;
+import com.threedfly.orderservice.dto.PrintCalculationRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -22,7 +22,7 @@ public class BambuSlicerService implements SlicerService {
 
     @Override
     public ProcessBuilder buildSlicerCommand(Path modelFilePath, Path iniPath, Path outputPath,
-                                              PrintQuotationRequest request) {
+                                              PrintCalculationRequest request) {
         // Extract individual parameters from request
         Double layerHeight = request.getLayerHeight();
         Integer shells = request.getShells();

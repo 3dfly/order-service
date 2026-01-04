@@ -1,6 +1,6 @@
 package com.threedfly.orderservice.validation;
 
-import com.threedfly.orderservice.dto.PrintQuotationRequest;
+import com.threedfly.orderservice.dto.PrintCalculationRequest;
 import com.threedfly.orderservice.exception.InvalidParameterCombinationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -80,7 +80,7 @@ class MaterialCombinationValidatorTest {
     @ParameterizedTest(name = "ConstraintValidator Valid: {0} + {1}")
     @MethodSource("validCombinations")
     void testConstraintValidator_ValidCombinations(String technology, String material) {
-        PrintQuotationRequest request = new PrintQuotationRequest();
+        PrintCalculationRequest request = new PrintCalculationRequest();
         request.setTechnology(technology);
         request.setMaterial(material);
         request.setLayerHeight(0.2);
@@ -96,7 +96,7 @@ class MaterialCombinationValidatorTest {
     @ParameterizedTest(name = "ConstraintValidator Invalid: {0} + {1}")
     @MethodSource("invalidCombinations")
     void testConstraintValidator_InvalidCombinations(String technology, String material) {
-        PrintQuotationRequest request = new PrintQuotationRequest();
+        PrintCalculationRequest request = new PrintCalculationRequest();
         request.setTechnology(technology);
         request.setMaterial(material);
         request.setLayerHeight(0.2);

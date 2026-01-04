@@ -42,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "printing.pricing.shell-cost-factor=0.25",
         "printing.pricing.standard-layer-height=0.2"
 })
-class PrintQuotationControllerIntegrationTest {
+class PrintCalculationControllerIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -103,7 +103,7 @@ class PrintQuotationControllerIntegrationTest {
     void testCalculateQuotation_AllValidCombinations(String technology, String material, boolean supporters) throws Exception {
         MockMultipartFile file = TestFileFactory.createTestStlFile();
 
-        mockMvc.perform(multipart("/api/print/quotation")
+        mockMvc.perform(multipart("/api/print/calculate")
                         .file(file)
                         .param("technology", technology)
                         .param("material", material)
@@ -136,7 +136,7 @@ class PrintQuotationControllerIntegrationTest {
     void testCalculateQuotation_InvalidCombinations(String technology, String material, boolean supporters) throws Exception {
         MockMultipartFile file = TestFileFactory.createTestStlFile();
 
-        mockMvc.perform(multipart("/api/print/quotation")
+        mockMvc.perform(multipart("/api/print/calculate")
                         .file(file)
                         .param("technology", technology)
                         .param("material", material)
@@ -155,7 +155,7 @@ class PrintQuotationControllerIntegrationTest {
     void testCalculateQuotation_WithObjFile() throws Exception {
         MockMultipartFile file = TestFileFactory.createTestObjFile();
 
-        mockMvc.perform(multipart("/api/print/quotation")
+        mockMvc.perform(multipart("/api/print/calculate")
                         .file(file)
                         .param("technology", "FDM")
                         .param("material", "PLA")
@@ -173,7 +173,7 @@ class PrintQuotationControllerIntegrationTest {
     void testCalculateQuotation_EmptyFile() throws Exception {
         MockMultipartFile file = TestFileFactory.createEmptyFile();
 
-        mockMvc.perform(multipart("/api/print/quotation")
+        mockMvc.perform(multipart("/api/print/calculate")
                         .file(file)
                         .param("technology", "FDM")
                         .param("material", "PLA")
@@ -192,7 +192,7 @@ class PrintQuotationControllerIntegrationTest {
     void testCalculateQuotation_InvalidFileType() throws Exception {
         MockMultipartFile file = TestFileFactory.createInvalidFileType();
 
-        mockMvc.perform(multipart("/api/print/quotation")
+        mockMvc.perform(multipart("/api/print/calculate")
                         .file(file)
                         .param("technology", "FDM")
                         .param("material", "PLA")
@@ -211,7 +211,7 @@ class PrintQuotationControllerIntegrationTest {
     void testCalculateQuotation_MissingRequiredParameter() throws Exception {
         MockMultipartFile file = TestFileFactory.createTestStlFile();
 
-        mockMvc.perform(multipart("/api/print/quotation")
+        mockMvc.perform(multipart("/api/print/calculate")
                         .file(file)
                         .param("technology", "FDM")
                         .param("material", "PLA")
@@ -230,7 +230,7 @@ class PrintQuotationControllerIntegrationTest {
     void testCalculateQuotation_InvalidLayerHeight() throws Exception {
         MockMultipartFile file = TestFileFactory.createTestStlFile();
 
-        mockMvc.perform(multipart("/api/print/quotation")
+        mockMvc.perform(multipart("/api/print/calculate")
                         .file(file)
                         .param("technology", "FDM")
                         .param("material", "PLA")
@@ -249,7 +249,7 @@ class PrintQuotationControllerIntegrationTest {
     void testCalculateQuotation_InvalidShellsCount() throws Exception {
         MockMultipartFile file = TestFileFactory.createTestStlFile();
 
-        mockMvc.perform(multipart("/api/print/quotation")
+        mockMvc.perform(multipart("/api/print/calculate")
                         .file(file)
                         .param("technology", "FDM")
                         .param("material", "PLA")
@@ -268,7 +268,7 @@ class PrintQuotationControllerIntegrationTest {
     void testCalculateQuotation_InvalidInfill() throws Exception {
         MockMultipartFile file = TestFileFactory.createTestStlFile();
 
-        mockMvc.perform(multipart("/api/print/quotation")
+        mockMvc.perform(multipart("/api/print/calculate")
                         .file(file)
                         .param("technology", "FDM")
                         .param("material", "PLA")
@@ -288,7 +288,7 @@ class PrintQuotationControllerIntegrationTest {
         MockMultipartFile file = TestFileFactory.createTestStlFile();
 
         // Test WITHOUT supporters
-        String responseWithoutSupport = mockMvc.perform(multipart("/api/print/quotation")
+        String responseWithoutSupport = mockMvc.perform(multipart("/api/print/calculate")
                         .file(file)
                         .param("technology", "FDM")
                         .param("material", "PLA")
@@ -308,7 +308,7 @@ class PrintQuotationControllerIntegrationTest {
                 .getContentAsString();
 
         // Test WITH supporters
-        String responseWithSupport = mockMvc.perform(multipart("/api/print/quotation")
+        String responseWithSupport = mockMvc.perform(multipart("/api/print/calculate")
                         .file(TestFileFactory.createTestStlFile()) // Create fresh file
                         .param("technology", "FDM")
                         .param("material", "PLA")

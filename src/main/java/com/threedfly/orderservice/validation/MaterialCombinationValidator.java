@@ -1,6 +1,6 @@
 package com.threedfly.orderservice.validation;
 
-import com.threedfly.orderservice.dto.PrintQuotationRequest;
+import com.threedfly.orderservice.dto.PrintCalculationRequest;
 import com.threedfly.orderservice.exception.InvalidParameterCombinationException;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
@@ -13,7 +13,7 @@ import java.util.Set;
 @Component
 @Slf4j
 public class MaterialCombinationValidator
-        implements ConstraintValidator<ValidMaterialCombination, PrintQuotationRequest> {
+        implements ConstraintValidator<ValidMaterialCombination, PrintCalculationRequest> {
 
     // Valid combinations matrix
     private static final Map<String, Set<String>> VALID_COMBINATIONS = Map.of(
@@ -23,7 +23,7 @@ public class MaterialCombinationValidator
     );
 
     @Override
-    public boolean isValid(PrintQuotationRequest request, ConstraintValidatorContext context) {
+    public boolean isValid(PrintCalculationRequest request, ConstraintValidatorContext context) {
         if (request == null || request.getTechnology() == null || request.getMaterial() == null) {
             return true; // Let @NotBlank handle null checks
         }
