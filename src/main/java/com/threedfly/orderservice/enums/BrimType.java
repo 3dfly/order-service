@@ -6,7 +6,10 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public enum BrimType {
     AUTO("auto"),
     NONE("none"),
-    CUSTOM("custom");
+    INNER_BRIM_ONLY("inner_brim_only"),
+    OUTER_AND_INNER_BRIM("outer_and_inner_brim"),
+    OUTER_BRIM_ONLY("outer_brim_only"),
+    PAINTED("painted");
 
     private final String value;
 

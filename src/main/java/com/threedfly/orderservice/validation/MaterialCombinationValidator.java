@@ -17,7 +17,7 @@ public class MaterialCombinationValidator
 
     // Valid combinations matrix
     private static final Map<String, Set<String>> VALID_COMBINATIONS = Map.of(
-            "FDM", Set.of("PLA", "ABS", "PETG", "TPU"),
+            "FDM", Set.of("PLA", "ABS", "PETG", "TPU", "ASA"),
             "SLS", Set.of("PLA", "ABS", "PETG"),
             "SLA", Set.of("PLA", "ABS")
     );

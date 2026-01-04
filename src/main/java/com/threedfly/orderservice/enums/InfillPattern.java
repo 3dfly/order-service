@@ -4,23 +4,28 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum InfillPattern {
+    ADAPTIVECUBIC("adaptivecubic"),
+    ALIGNEDRECTILINEAR("alignedrectilinear"),
+    ARCHIMEDEANCHORDS("archimedeanchords"),
+    CONCENTRIC("concentric"),
+    CROSS3D("cross3d"),
+    CROSSHATCH("crosshatch"),
+    CROSSZAG("crosszag"),
+    CUBIC("cubic"),
     GRID("grid"),
     GYROID("gyroid"),
-    HONEYCOMB("honeycomb"),
-    LINE("line"),
-    RECTILINEAR("rectilinear"),
-    CUBIC("cubic"),
-    TRIANGLES("triangles"),
-    CONCENTRIC("concentric"),
     HILBERTCURVE("hilbertcurve"),
-    ARCHIMEDEANCHORDS("archimedeanchords"),
-    OCTAGRAMSPIRAL("octagramspiral"),
-    ADAPTIVECUBIC("adaptivecubic"),
-    SUPPORTCUBIC("supportcubic"),
+    HONEYCOMB("honeycomb"),
+    HONEYCOMB3D("honeycomb3d"),
     LIGHTNING("lightning"),
-    CROSSHATCH("crosshatch"),
-    CROSS3D("cross3d"),
-    HONEYCOMB3D("honeycomb3d");
+    LINE("line"),
+    LOCKEDZAG("lockedzag"),
+    OCTAGRAMSPIRAL("octagramspiral"),
+    RECTILINEAR("rectilinear"),
+    SUPPORTCUBIC("supportcubic"),
+    TRIANGLES("triangles"),
+    TRIHEXAGON("trihexagon"),
+    ZIGZAG("zigzag");
 
     private final String value;
 
