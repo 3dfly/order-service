@@ -1,6 +1,6 @@
 package com.threedfly.orderservice.service.slicer;
 
-import com.threedfly.orderservice.dto.PrintQuotationRequest;
+import com.threedfly.orderservice.dto.PrintCalculationRequest;
 import java.nio.file.Path;
 
 /**
@@ -20,7 +20,7 @@ public interface SlicerService {
      * @return ProcessBuilder configured with slicer-specific command and arguments
      */
     ProcessBuilder buildSlicerCommand(Path modelFilePath, Path iniPath, Path outputPath,
-                                       PrintQuotationRequest request);
+                                       PrintCalculationRequest request);
 
     /**
      * Checks if this slicer service supports the given slicer type.

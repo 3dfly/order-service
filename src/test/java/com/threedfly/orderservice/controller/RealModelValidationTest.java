@@ -135,7 +135,7 @@ class RealModelValidationTest {
         }
 
         // Execute API request
-        MvcResult result = mockMvc.perform(multipart("/api/print/quotation")
+        MvcResult result = mockMvc.perform(multipart("/api/print/calculate")
                         .file(file)
                         .param("technology", "FDM")
                         .param("material", material)
@@ -200,7 +200,7 @@ class RealModelValidationTest {
             );
         }
 
-        MvcResult result = mockMvc.perform(multipart("/api/print/quotation")
+        MvcResult result = mockMvc.perform(multipart("/api/print/calculate")
                         .file(file)
                         .param("technology", "FDM")
                         .param("material", "PLA")

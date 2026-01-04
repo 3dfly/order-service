@@ -1,6 +1,6 @@
 package com.threedfly.orderservice.service.slicer;
 
-import com.threedfly.orderservice.dto.PrintQuotationRequest;
+import com.threedfly.orderservice.dto.PrintCalculationRequest;
 import com.threedfly.orderservice.enums.BrimType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,7 +25,7 @@ public class PrusaSlicerService implements SlicerService {
 
     @Override
     public ProcessBuilder buildSlicerCommand(Path modelFilePath, Path iniPath, Path outputPath,
-                                              PrintQuotationRequest request) {
+                                              PrintCalculationRequest request) {
         // Convert paths to absolute strings to prevent injection
         String absoluteIniPath = iniPath.toAbsolutePath().normalize().toString();
         String absoluteOutputPath = outputPath.toAbsolutePath().normalize().toString();

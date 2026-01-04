@@ -1,7 +1,7 @@
 package com.threedfly.orderservice.service.slicer;
 
 import org.junit.jupiter.api.BeforeEach;
-import com.threedfly.orderservice.dto.PrintQuotationRequest;
+import com.threedfly.orderservice.dto.PrintCalculationRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -54,7 +54,7 @@ class BambuSlicerServiceTest {
         Path iniPath = Paths.get("/tmp/config.ini");
         Path outputPath = Paths.get("/tmp/output.gcode");
 
-        PrintQuotationRequest request = PrintQuotationRequest.builder()
+        PrintCalculationRequest request = PrintCalculationRequest.builder()
                 .layerHeight(0.2)
                 .shells(3)
                 .infill(15)
@@ -88,7 +88,7 @@ class BambuSlicerServiceTest {
         Path iniPath = Paths.get("/tmp/config.ini");
         Path outputPath = Paths.get("/tmp/output.gcode");
 
-        PrintQuotationRequest request = PrintQuotationRequest.builder()
+        PrintCalculationRequest request = PrintCalculationRequest.builder()
                 .layerHeight(0.15)
                 .shells(2)
                 .infill(10)
@@ -112,7 +112,7 @@ class BambuSlicerServiceTest {
         Path iniPath = Paths.get("/tmp/config.ini");
         Path outputPath = Paths.get("/tmp/output.gcode");
 
-        PrintQuotationRequest request = PrintQuotationRequest.builder()
+        PrintCalculationRequest request = PrintCalculationRequest.builder()
                 .layerHeight(0.25)
                 .shells(5)
                 .infill(20)
@@ -137,7 +137,7 @@ class BambuSlicerServiceTest {
         Path iniPath = Paths.get("/tmp/config.ini");
         Path outputPath = Paths.get("/tmp/output.gcode");
 
-        PrintQuotationRequest request = PrintQuotationRequest.builder()
+        PrintCalculationRequest request = PrintCalculationRequest.builder()
                 .layerHeight(0.2)
                 .shells(3)
                 .infill(15)
@@ -161,7 +161,7 @@ class BambuSlicerServiceTest {
         Path iniPath = Paths.get("relative/config.ini");
         Path outputPath = Paths.get("relative/output.gcode");
 
-        PrintQuotationRequest request = PrintQuotationRequest.builder()
+        PrintCalculationRequest request = PrintCalculationRequest.builder()
                 .layerHeight(0.2)
                 .shells(3)
                 .infill(15)

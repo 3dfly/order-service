@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @ValidMaterialCombination
-public class PrintQuotationRequest {
+public class PrintCalculationRequest {
 
     @NotBlank(message = "Technology is required")
     @Pattern(regexp = "FDM|SLS|SLA", message = "Technology must be FDM, SLS, or SLA")

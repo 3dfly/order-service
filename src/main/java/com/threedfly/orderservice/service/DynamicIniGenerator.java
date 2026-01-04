@@ -1,6 +1,6 @@
 package com.threedfly.orderservice.service;
 
-import com.threedfly.orderservice.dto.PrintQuotationRequest;
+import com.threedfly.orderservice.dto.PrintCalculationRequest;
 import com.threedfly.orderservice.enums.BrimType;
 import com.threedfly.orderservice.enums.InfillPattern;
 import com.threedfly.orderservice.enums.SeamPosition;
@@ -21,7 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Service for generating dynamic INI configuration files based on PrintQuotationRequest.
+ * Service for generating dynamic INI configuration files based on PrintCalculationRequest.
  * This allows supporting more slicer parameters that may not be available via CLI.
  */
 @Service
@@ -40,7 +40,7 @@ public class DynamicIniGenerator {
      * @return Path to the generated dynamic INI file
      * @throws IOException if file operations fail
      */
-    public Path generateDynamicIni(Path baseIniPath, PrintQuotationRequest request) throws IOException {
+    public Path generateDynamicIni(Path baseIniPath, PrintCalculationRequest request) throws IOException {
         log.info("🔧 Generating dynamic INI from base: {}", baseIniPath);
 
         // Read base INI file
@@ -85,9 +85,9 @@ public class DynamicIniGenerator {
     }
 
     /**
-     * Applies parameters from PrintQuotationRequest to the INI configuration.
+     * Applies parameters from PrintCalculationRequest to the INI configuration.
      */
-    private void applyRequestParameters(Map<String, String> config, PrintQuotationRequest request) {
+    private void applyRequestParameters(Map<String, String> config, PrintCalculationRequest request) {
         // Layer height
         if (request.getLayerHeight() != null) {
             config.put("layer_height", String.valueOf(request.getLayerHeight()));

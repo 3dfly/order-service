@@ -1,11 +1,11 @@
 package com.threedfly.orderservice.controller;
 
-import com.threedfly.orderservice.dto.PrintQuotationRequest;
-import com.threedfly.orderservice.dto.PrintQuotationResponse;
+import com.threedfly.orderservice.dto.PrintCalculationRequest;
+import com.threedfly.orderservice.dto.PrintCalculationResponse;
 import com.threedfly.orderservice.exception.FileParseException;
 import com.threedfly.orderservice.exception.InvalidFileTypeException;
 import com.threedfly.orderservice.exception.InvalidParameterCombinationException;
-import com.threedfly.orderservice.service.PrintQuotationService;
+import com.threedfly.orderservice.service.PrintCalculationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,21 +17,21 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/print")
 @RequiredArgsConstructor
 @Slf4j
-public class PrintQuotationController {
+public class PrintCalculationController {
 
-    private final PrintQuotationService quotationService;
+    private final PrintCalculationService calculationService;
 
-    @PostMapping("/quotation")
-    public ResponseEntity<PrintQuotationResponse> calculateQuotation(
+    @PostMapping("/calculate")
+    public ResponseEntity<PrintCalculationResponse> calculatePrice(
             @RequestPart("file") MultipartFile file,
-            @Valid @ModelAttribute PrintQuotationRequest request) {
+            @Valid @ModelAttribute PrintCalculationRequest request) {
 
-        log.info("💰 POST /api/print/quotation - file: {}, tech: {}, material: {}",
+        log.info("💰 POST /api/print/calculate - file: {}, tech: {}, material: {}",
                 file.getOriginalFilename(), request.getTechnology(), request.getMaterial());
 
         try {
-            PrintQuotationResponse response = quotationService.calculateQuotation(file, request);
-            log.info("✅ Quotation calculated successfully: ${}", response.getEstimatedPrice());
+            PrintCalculationResponse response = calculationService.calculatePrice(file, request);
+            log.info("✅ Calculation completed successfully: ${}", response.getEstimatedPrice());
             return ResponseEntity.ok(response);
         } catch (InvalidFileTypeException | InvalidParameterCombinationException e) {
             log.error("❌ Validation error: {}", e.getMessage());
@@ -40,7 +40,7 @@ public class PrintQuotationController {
             log.error("❌ File parse error: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("❌ Error calculating quotation", e);
+            log.error("❌ Error calculating price", e);
             throw e;
         }
     }

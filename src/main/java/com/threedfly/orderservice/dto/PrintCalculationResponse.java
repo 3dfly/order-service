@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PrintQuotationResponse {
+public class PrintCalculationResponse {
     private String fileName;
     private Double materialUsedGrams;
     private Integer printingTimeMinutes;

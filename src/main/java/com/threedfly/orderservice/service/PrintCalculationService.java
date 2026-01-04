@@ -1,8 +1,8 @@
 package com.threedfly.orderservice.service;
 
 import com.threedfly.orderservice.config.PrintingPricingConfig;
-import com.threedfly.orderservice.dto.PrintQuotationRequest;
-import com.threedfly.orderservice.dto.PrintQuotationResponse;
+import com.threedfly.orderservice.dto.PrintCalculationRequest;
+import com.threedfly.orderservice.dto.PrintCalculationResponse;
 import com.threedfly.orderservice.dto.SlicingResult;
 import com.threedfly.orderservice.entity.ModelFileType;
 import com.threedfly.orderservice.exception.FileParseException;
@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class PrintQuotationService {
+public class PrintCalculationService {
 
     private final IniConfigurationMapper iniConfigurationMapper;
     private final DynamicIniGenerator dynamicIniGenerator;
@@ -49,7 +49,7 @@ public class PrintQuotationService {
     private String tempDirectory;
 
     @Transactional(readOnly = true)
-    public PrintQuotationResponse calculateQuotation(MultipartFile file, PrintQuotationRequest request) {
+    public PrintCalculationResponse calculatePrice(MultipartFile file, PrintCalculationRequest request) {
         log.info("📐 Starting quotation calculation for file: {}", file.getOriginalFilename());
 
         // 1. Validate file type
@@ -155,7 +155,7 @@ public class PrintQuotationService {
     }
 
     private SlicingResult processWithSlicer(Path modelFilePath, Path iniPath,
-                                             PrintQuotationRequest request) {
+                                             PrintCalculationRequest request) {
         log.info("⚙️ Processing file with slicer: {}", modelFilePath);
         log.info("📊 Parameters - layerHeight: {}, shells: {}, infill: {}%, supporters: {}",
                 request.getLayerHeight(), request.getShells(), request.getInfill(), request.getSupporters());
@@ -440,10 +440,10 @@ public class PrintQuotationService {
                 .build();
     }
 
-    private PrintQuotationResponse calculatePricing(
+    private PrintCalculationResponse calculatePricing(
             SlicingResult slicingResult,
             String filename,
-            PrintQuotationRequest request) {
+            PrintCalculationRequest request) {
 
         log.info("💰 Calculating pricing - Weight: {}g, Time: {}min",
                 slicingResult.getFilamentWeightGrams(), slicingResult.getEstimatedPrintTimeMinutes());
@@ -469,7 +469,7 @@ public class PrintQuotationService {
         log.info("🎯 Pricing calculated - Material cost: ${}, Time cost: ${}, Total: ${}",
                 materialCost, timeCost, totalPrice);
 
-        return PrintQuotationResponse.builder()
+        return PrintCalculationResponse.builder()
                 .fileName(filename)
                 .materialUsedGrams(slicingResult.getFilamentWeightGrams())
                 .printingTimeMinutes(slicingResult.getEstimatedPrintTimeMinutes())
