@@ -36,9 +36,16 @@ public class PrintCalculationController {
         log.info("💰 POST /api/print/calculate - file: {}, tech: {}, material: {}",
                 file.getOriginalFilename(), tech, material);
 
-        // Validate request parameters only if they're provided (STL/OBJ files)
-        // For 3MF files, request will be empty and validation is skipped
-        if (request != null && isRequestPopulated(request)) {
+        // Determine file type from extension
+        String fileName = file.getOriginalFilename();
+        String fileExtension = fileName != null ? fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase() : "";
+
+        // For STL/OBJ files, always validate request parameters (they require manual input)
+        // For 3MF files, skip validation only if request is completely empty (parameters will be extracted)
+        boolean requiresManualParameters = fileExtension.equals("stl") || fileExtension.equals("obj");
+        boolean shouldValidate = requiresManualParameters || (request != null && isRequestPopulated(request));
+
+        if (shouldValidate && request != null) {
             Set<ConstraintViolation<PrintCalculationRequest>> violations = validator.validate(request);
             if (!violations.isEmpty()) {
                 throw new ValidationException("Request validation failed", violations);

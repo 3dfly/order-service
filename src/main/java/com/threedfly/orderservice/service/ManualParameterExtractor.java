@@ -21,10 +21,9 @@ public class ManualParameterExtractor implements ParameterExtractor {
 
         log.debug("📄 {} file requires manual parameters", fileType);
 
-        if (request == null || !hasRequiredFields(request)) {
+        if (request == null) {
             throw new IllegalArgumentException(
                 String.format("Request parameters are required for %s files. " +
-                    "Required fields: technology, material, layerHeight, shells, infill, supporters. " +
                     "Only 3MF files support automatic parameter extraction.", fileType)
             );
         }
@@ -36,19 +35,5 @@ public class ManualParameterExtractor implements ParameterExtractor {
     @Override
     public boolean requiresManualParameters() {
         return true;
-    }
-
-    /**
-     * Checks if the request has all required fields populated.
-     * This is necessary because Spring's @ModelAttribute can create a non-null
-     * request object with all null fields when no parameters are provided.
-     */
-    private boolean hasRequiredFields(PrintCalculationRequest request) {
-        return request.getTechnology() != null &&
-               request.getMaterial() != null &&
-               request.getLayerHeight() != null &&
-               request.getShells() != null &&
-               request.getInfill() != null &&
-               request.getSupporters() != null;
     }
 }
