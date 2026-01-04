@@ -488,7 +488,6 @@ public class PrintCalculationService {
                 // Include new parameters in response
                 .brimType(request.getBrimType())
                 .brimWidth(request.getBrimWidth())
-                .supportType(request.getSupportType())
                 .topShellLayers(request.getTopShellLayers())
                 .bottomShellLayers(request.getBottomShellLayers())
                 .infillPattern(request.getInfillPattern())

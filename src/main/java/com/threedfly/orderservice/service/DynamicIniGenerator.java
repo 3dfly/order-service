@@ -4,7 +4,6 @@ import com.threedfly.orderservice.dto.PrintCalculationRequest;
 import com.threedfly.orderservice.enums.BrimType;
 import com.threedfly.orderservice.enums.InfillPattern;
 import com.threedfly.orderservice.enums.SeamPosition;
-import com.threedfly.orderservice.enums.SupportType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -124,17 +123,14 @@ public class DynamicIniGenerator {
             config.put("brim_width", String.valueOf(request.getBrimWidth()));
         }
 
-        // Support settings
+        // Support settings - Always use tree supports when enabled
         if (request.getSupporters() != null) {
             config.put("support_material", request.getSupporters() ? "1" : "0");
             config.put("support_material_auto", request.getSupporters() ? "1" : "0");
 
-            // Apply support type if supporters are enabled
+            // Apply tree support when supporters are enabled
             if (request.getSupporters()) {
-                SupportType supportType = request.getSupportType() != null
-                    ? request.getSupportType()
-                    : SupportType.NORMAL; // Default to NORMAL if not specified
-                config.put("support_material_pattern", mapSupportType(supportType));
+                config.put("support_material_pattern", "tree");
             }
         }
 
@@ -164,18 +160,6 @@ public class DynamicIniGenerator {
      */
     private String mapBrimType(BrimType brimType) {
         return brimType.getValue();
-    }
-
-    /**
-     * Maps SupportType enum to slicer INI value.
-     */
-    private String mapSupportType(SupportType supportType) {
-        // Map enum values to slicer INI values
-        return switch (supportType) {
-            case TREE_AUTO, TREE -> "tree";
-            case ORGANIC -> "organic";
-            case NORMAL -> "rectilinear";
-        };
     }
 
     /**

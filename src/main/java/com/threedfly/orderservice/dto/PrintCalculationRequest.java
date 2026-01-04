@@ -3,7 +3,6 @@ package com.threedfly.orderservice.dto;
 import com.threedfly.orderservice.enums.BrimType;
 import com.threedfly.orderservice.enums.InfillPattern;
 import com.threedfly.orderservice.enums.SeamPosition;
-import com.threedfly.orderservice.enums.SupportType;
 import com.threedfly.orderservice.validation.ValidMaterialCombination;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -23,7 +22,7 @@ public class PrintCalculationRequest {
     private String technology;
 
     @NotBlank(message = "Material is required")
-    @Pattern(regexp = "PLA|ABS|PETG|TPU", message = "Material must be PLA, ABS, PETG, or TPU")
+    @Pattern(regexp = "PLA|ABS|PETG|TPU|ASA", message = "Material must be PLA, ABS, PETG, TPU, or ASA")
     private String material;
 
     @NotNull(message = "Layer height is required")
@@ -51,13 +50,6 @@ public class PrintCalculationRequest {
     @Min(value = 0, message = "Brim width must be at least 0mm")
     @Max(value = 20, message = "Brim width must not exceed 20mm")
     private Integer brimWidth;
-
-    /**
-     * Type of support structure to generate.
-     * If not specified and supporters=true, will default to NORMAL.
-     * This parameter is ignored if supporters=false.
-     */
-    private SupportType supportType;
 
     @Builder.Default
     @Min(value = 0, message = "Top shell layers must be at least 0")

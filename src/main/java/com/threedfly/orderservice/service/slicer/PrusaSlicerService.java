@@ -77,26 +77,15 @@ public class PrusaSlicerService implements SlicerService {
             command.add("0");
         }
 
-        // Support material settings
+        // Support material settings - Always use tree supports (organic style)
         if (request.getSupporters() != null && request.getSupporters()) {
             command.add("--support-material=1");
             command.add("--support-material-auto=1");
 
-            // Support style - Use organic supports (PrusaSlicer's tree support equivalent)
+            // Always use organic style (tree supports)
             // PrusaSlicer uses --support-material-style for organic (tree) supports
-            // Valid values: grid, snug, organic
-            if (request.getSupportType() != null) {
-                String style = switch (request.getSupportType()) {
-                    case TREE_AUTO, TREE, ORGANIC -> "organic"; // Tree supports = organic style
-                    case NORMAL -> "grid"; // Normal supports = grid style
-                };
-                command.add("--support-material-style");
-                command.add(style);
-            } else {
-                // Default to organic for better support efficiency
-                command.add("--support-material-style");
-                command.add("organic");
-            }
+            command.add("--support-material-style");
+            command.add("organic");
         } else {
             command.add("--support-material=0");
             command.add("--support-material-auto=0");
@@ -119,10 +108,10 @@ public class PrusaSlicerService implements SlicerService {
         command.add(absoluteModelPath);
 
         log.debug("🔧 Building PrusaSlicer command with parameters: layerHeight={}, shells={}, infill={}%, " +
-                  "topLayers={}, bottomLayers={}, brimWidth={}, supporters={}, supportType={}, infillPattern={}",
+                  "topLayers={}, bottomLayers={}, brimWidth={}, supporters={}, infillPattern={}",
                 request.getLayerHeight(), request.getShells(), request.getInfill(),
                 request.getTopShellLayers(), request.getBottomShellLayers(),
-                request.getBrimWidth(), request.getSupporters(), request.getSupportType(),
+                request.getBrimWidth(), request.getSupporters(),
                 request.getInfillPattern());
 
         return new ProcessBuilder(command);
