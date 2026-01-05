@@ -103,6 +103,10 @@ class PrintCalculationControllerIntegrationTest {
     void testCalculateQuotation_AllValidCombinations(String technology, String material, boolean supporters) throws Exception {
         MockMultipartFile file = TestFileFactory.createTestStlFile();
 
+        // Mock slicer returns different values based on supporters flag
+        double expectedMaterial = supporters ? 15.50 : 12.34;
+        int expectedTime = supporters ? 105 : 83; // 1h 45m vs 1h 23m
+
         mockMvc.perform(multipart("/api/print/calculate")
                         .file(file)
                         .param("technology", technology)
@@ -123,8 +127,8 @@ class PrintCalculationControllerIntegrationTest {
                 .andExpect(jsonPath("$.supporters").value(supporters))
                 .andExpect(jsonPath("$.estimatedPrice").exists())
                 .andExpect(jsonPath("$.currency").value("USD"))
-                .andExpect(jsonPath("$.materialUsedGrams").exists())
-                .andExpect(jsonPath("$.printingTimeMinutes").exists())
+                .andExpect(jsonPath("$.materialUsedGrams").value(expectedMaterial))
+                .andExpect(jsonPath("$.printingTimeMinutes").value(expectedTime))
                 .andExpect(jsonPath("$.pricePerGram").exists())
                 .andExpect(jsonPath("$.pricePerMinute").exists())
                 .andExpect(jsonPath("$.materialCost").exists())
