@@ -2,12 +2,64 @@ package com.threedfly.orderservice;
 
 import org.springframework.mock.web.MockMultipartFile;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
- * Factory class for creating test 3D model files
+ * Factory class for creating test 3D model files.
+ * Uses REAL STL/3MF files from src/test/resources/test-models/ for realistic testing.
  */
 public class TestFileFactory {
+
+    private static final String TEST_MODELS_PATH = "test-models";
+
+    /**
+     * Creates a test file from a REAL STL file stored in test resources.
+     * Falls back to synthetic cube if real file not found.
+     */
+    public static MockMultipartFile createRealStlFile(String modelName) {
+        try {
+            // Load from classpath resources
+            byte[] fileContent = TestFileFactory.class.getClassLoader()
+                    .getResourceAsStream(TEST_MODELS_PATH + "/" + modelName)
+                    .readAllBytes();
+
+            System.out.println("✅ Using REAL file from resources: " + modelName + " (" + fileContent.length + " bytes)");
+            return new MockMultipartFile(
+                    "file",
+                    modelName,
+                    "application/octet-stream",
+                    fileContent
+            );
+        } catch (IOException | NullPointerException e) {
+            System.out.println("⚠️  Real file not found in resources: " + modelName + ", using synthetic cube");
+            return createTestStlFile();
+        }
+    }
+
+    /**
+     * Creates a test file from a REAL 3MF file stored in test resources.
+     */
+    public static MockMultipartFile createReal3MFFile(String modelName) {
+        try {
+            // Load from classpath resources
+            byte[] fileContent = TestFileFactory.class.getClassLoader()
+                    .getResourceAsStream(TEST_MODELS_PATH + "/" + modelName)
+                    .readAllBytes();
+
+            System.out.println("✅ Using REAL 3MF file from resources: " + modelName + " (" + fileContent.length + " bytes)");
+            return new MockMultipartFile(
+                    "file",
+                    modelName,
+                    "application/octet-stream",
+                    fileContent
+            );
+        } catch (IOException | NullPointerException e) {
+            throw new RuntimeException("3MF file not found in resources: " + modelName, e);
+        }
+    }
 
     /**
      * Creates a simple ASCII STL file representing a cube
